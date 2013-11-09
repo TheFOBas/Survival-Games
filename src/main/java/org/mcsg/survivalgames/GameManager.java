@@ -87,7 +87,6 @@ public class GameManager {
 			
 		}
 		LobbyManager.getInstance().clearAllSigns();
-		
 	}
 
 	public int getBlockGameId(Location v) {
@@ -194,7 +193,7 @@ public class GameManager {
 	}
 
 	public void removePlayer(Player p, boolean b) {
-		getGame(getPlayerGameId(p)).removePlayer(p, b);
+		getGame(getPlayerGameId(p)).playerLeave(p, b);
 	}
 
 	public void removeSpectator(Player p) {

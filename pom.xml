@@ -38,7 +38,6 @@
 <configuration>
 <artifactSet>
 <includes>
-<include>org.mcstats:Metrics</include>
 </includes>
 </artifactSet>
 <relocations>

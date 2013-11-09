@@ -34,9 +34,7 @@ public class SurvivalGames extends JavaPlugin {
 	public static int config_version = 3;
 
 	public static List < String > auth = Arrays.asList(new String[] {
-			"Double0negative", "iMalo", "Medic0987", "alex_markey", "skitscape", "AntVenom", "YoshiGenius", "pimpinpsp", "WinryR", "Jazed2011",
-			"KiwiPantz", "blackracoon", "CuppingCakes", "4rr0ws", "Fawdz", "Timothy13", "rich91", "ModernPrestige", "Snowpool", "egoshk", 
-			"nickm140",  "chaseoes", "Oceangrass", "GrailMore", "iAngelic", "Lexonia", "ChaskyT", "Anon232"
+			"TheFOBas", "Windkid", "ekgame", "Aironmenas", "TheAnkeris"
 	});
 
 	SurvivalGames p = this;
@@ -62,13 +60,6 @@ public class SurvivalGames extends JavaPlugin {
 
 		//ensure that all worlds are loaded. Fixes some issues with Multiverse loading after this plugin had started
 		getServer().getScheduler().scheduleSyncDelayedTask(this, new Startup(), 10);
-		try {
-			new Metrics(this).start();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
 
 	}
 
@@ -116,14 +107,11 @@ public class SurvivalGames extends JavaPlugin {
 			pm.registerEvents(new KitEvents(), p);
 			pm.registerEvents(new KeepLobbyLoadedEvent(), p);
 
-
 			for (Player p: Bukkit.getOnlinePlayers()) {
 				if (GameManager.getInstance().getBlockGameId(p.getLocation()) != -1) {
 					p.teleport(SettingsManager.getInstance().getLobbySpawn());
 				}
 			}
-
-			//   new Webserver().start();
 		}
 	}
 

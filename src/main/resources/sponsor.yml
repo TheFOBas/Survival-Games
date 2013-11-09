@@ -41,7 +41,10 @@ permissions:
     sg.player.list:
         description: List all players in the arena you are playing in.
         default: true
-    
+
+    sg.vip:
+        description: Survival Games Vip
+        default: op
     sg.staff.*:
         default: op
         description: SurvivalGames Staff Commands

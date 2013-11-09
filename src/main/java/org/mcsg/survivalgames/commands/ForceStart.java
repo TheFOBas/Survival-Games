@@ -27,7 +27,6 @@ public class ForceStart implements SubCommand {
 		}
 		if(args.length >= 1){
 			game = Integer.parseInt(args[0]);
-
 		}
 		else
 			game  = GameManager.getInstance().getPlayerGameId(player);
@@ -46,6 +45,9 @@ public class ForceStart implements SubCommand {
 			MessageManager.getInstance().sendFMessage(PrefixType.ERROR, "error.alreadyingame", player);
 			return true;
 		}
+        for (Player pl : g.getAllPlayers()) {
+            g.getScoreboard().playerLiving(pl);
+        }
 		g.countdown(seconds);
 
 		msgmgr.sendFMessage(PrefixType.INFO, "game.started", player, "arena-" + game);

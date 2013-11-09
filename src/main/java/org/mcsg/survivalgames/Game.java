@@ -9,6 +9,8 @@ import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -16,24 +18,17 @@ import org.bukkit.plugin.Plugin;
 import org.mcsg.survivalgames.MessageManager.PrefixType;
 import org.mcsg.survivalgames.api.PlayerJoinArenaEvent;
 import org.mcsg.survivalgames.api.PlayerKilledEvent;
-import org.mcsg.survivalgames.api.PlayerLeaveArenaEvent;
 import org.mcsg.survivalgames.hooks.HookManager;
 import org.mcsg.survivalgames.logging.QueueManager;
 import org.mcsg.survivalgames.stats.StatsManager;
 import org.mcsg.survivalgames.util.ItemReader;
 import org.mcsg.survivalgames.util.Kit;
 
-import com.sk89q.wepif.PluginPermissionsResolver;
-
-
-
-//Data container for a game
-
 public class Game {
 
 	public static enum GameMode {
 		DISABLED, LOADING, INACTIVE, WAITING,
-		STARTING, INGAME, FINISHING, RESETING, ERROR
+		STARTING, INGAME, FINISHING, RESETING, ERROR, DEATHMACH, STARTING_DEATHMACH
 	}
 
 	private GameMode mode = GameMode.DISABLED;
@@ -57,14 +52,16 @@ public class Game {
 	private boolean disabled = false;
 	private int endgameTaskID = 0;
 	private boolean endgameRunning = false;
-	private double rbpercent = 0;
+    private int dmTaskID = 0;
+    private int endGameDM;
 	private String rbstatus = "";
+    private double rbpercent = 0;
 	private long startTime = 0;
 	private boolean countdownRunning;
 	private StatsManager sm = StatsManager.getInstance();
 	private HashMap < String, String > hookvars = new HashMap < String, String > ();
 	private MessageManager msgmgr = MessageManager.getInstance();
-
+    private GameScoreboard scoreBoard = null;
 
 	public Game(int gameid) {
 		gameID = gameid;
@@ -90,15 +87,15 @@ public class Game {
 		int x = system.getInt("sg-system.arenas." + gameID + ".x1");
 		int y = system.getInt("sg-system.arenas." + gameID + ".y1");
 		int z = system.getInt("sg-system.arenas." + gameID + ".z1");
-		$(x + " " + y + " " + z);
+		//$(x + " " + y + " " + z);
 		int x1 = system.getInt("sg-system.arenas." + gameID + ".x2");
 		int y1 = system.getInt("sg-system.arenas." + gameID + ".y2");
 		int z1 = system.getInt("sg-system.arenas." + gameID + ".z2");
-		$(x1 + " " + y1 + " " + z1);
+		//$(x1 + " " + y1 + " " + z1);
 		Location max = new Location(SettingsManager.getGameWorld(gameID), Math.max(x, x1), Math.max(y, y1), Math.max(z, z1));
-		$(max.toString());
+		//$(max.toString());
 		Location min = new Location(SettingsManager.getGameWorld(gameID), Math.min(x, x1), Math.min(y, y1), Math.min(z, z1));
-		$(min.toString());
+		//$(min.toString());
 
 		arena = new Arena(min, max);
 
@@ -109,10 +106,16 @@ public class Game {
 		hookvars.put("activeplayers", "0");
 
 		mode = GameMode.WAITING;
+
+
+        Bukkit.broadcastMessage("Game " + gameID);
+        scoreBoard = new GameScoreboard(gameID);
 	}
 
 	public void reloadFlags() {
 		flags = SettingsManager.getInstance().getGameFlags(gameID);
+
+        scoreBoard.reset();
 	}
 
 	public void saveFlags() {
@@ -176,6 +179,7 @@ public class Game {
 
 		MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.gamewaiting", "arena-"+gameID);
 
+        scoreBoard.reset();
 	}
 
 
@@ -237,7 +241,7 @@ public class Game {
 						p.setHealth(p.getMaxHealth());p.setFoodLevel(20);clearInv(p);
 
 						activePlayers.add(p);sm.addPlayer(p, gameID);
-
+                        scoreBoard.addPlayer(p);
 						hookvars.put("activeplayers", activePlayers.size()+"");
 						LobbyManager.getInstance().updateWall(gameID);
 						showMenu(p);
@@ -291,14 +295,11 @@ public class Game {
 
 	public void showMenu(Player p){
 		GameManager.getInstance().openKitMenu(p);
-		Inventory i = Bukkit.getServer().createInventory(p, 90, ChatColor.RED+""+ChatColor.BOLD+"Kit Selection");
+		Inventory i = Bukkit.getServer().createInventory(p, 9, ChatColor.RED+""+ChatColor.BOLD+"Kit Selection");
 
-		int a = 0;
 		int b = 0;
-
-
 		ArrayList<Kit>kits = GameManager.getInstance().getKits(p);
-		SurvivalGames.debug(kits+"");
+		//SurvivalGames.debug(kits+"");
 		if(kits == null || kits.size() == 0 || !SettingsManager.getInstance().getKits().getBoolean("enabled")){
 			GameManager.getInstance().leaveKitMenu(p);
 			return;
@@ -307,22 +308,9 @@ public class Game {
 		for(Kit k: kits){
 			ItemStack i1 = k.getIcon();
 			ItemMeta im = i1.getItemMeta();
-
-			debug(k.getName()+" "+i1+" "+im);
-
 			im.setDisplayName(ChatColor.GOLD+""+ChatColor.BOLD+k.getName());
 			i1.setItemMeta(im);
-			i.setItem((9 * a) + b, i1);
-			a = 2;
-
-			for(ItemStack s2:k.getContents()){
-				if(s2 != null){
-					i.setItem((9 * a) + b, s2);
-					a++;
-				}
-			}
-
-			a = 0;
+			i.setItem((0) + b, i1);
 			b++;
 		}
 		p.openInventory(i);
@@ -351,8 +339,6 @@ public class Game {
 	ArrayList < Player > voted = new ArrayList < Player > ();
 
 	public void vote(Player pl) {
-
-
 		if (GameMode.STARTING == mode) {
 			msgmgr.sendMessage(PrefixType.WARNING, "Game already starting!", pl);
 			return;
@@ -369,6 +355,7 @@ public class Game {
 		voted.add(pl);
 		msgmgr.sendFMessage(PrefixType.INFO, "game.playervote", pl, "player-"+pl.getName());
 		HookManager.getInstance().runHook("PLAYER_VOTE", "player-"+pl.getName());
+        scoreBoard.playerLiving(pl);
 		/*for(Player p: activePlayers){
             p.sendMessage(ChatColor.AQUA+pl.getName()+" Voted to start the game! "+ Math.round((vote +0.0) / ((getActivePlayers() +0.0)*100)) +"/"+((c.getInt("auto-start-vote")+0.0))+"%");
         }*/
@@ -378,7 +365,8 @@ public class Game {
 			for (Player p: activePlayers) {
 				//p.sendMessage(ChatColor.LIGHT_PURPLE + "Game Starting in " + c.getInt("auto-start-time"));
 				msgmgr.sendMessage(PrefixType.INFO, "Game starting in " + config.getInt("auto-start-time") + "!", p);
-			}
+                scoreBoard.playerLiving(pl);
+            }
 		}
 	}
 
@@ -392,6 +380,7 @@ public class Game {
 	 * 
 	 * 
 	 */
+    private int nextStrike = 1200;     //tik'ai
 	public void startGame() {
 		if (mode == GameMode.INGAME) {
 			return;
@@ -405,7 +394,12 @@ public class Game {
 
 			}
 			return;
-		} else {
+		} else if (mode == GameMode.STARTING_DEATHMACH) {
+            nextStrike = 1200; //tikks
+            mode = GameMode.DEATHMACH;
+            tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new LightningStrike(), nextStrike));
+            MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.deathmachstarted", "arena-"+gameID);
+        } else {
 			startTime = new Date().getTime();
 			for (Player pl: activePlayers) {
 				pl.setHealth(pl.getMaxHealth());
@@ -431,15 +425,22 @@ public class Game {
 					}
 				}, config.getInt("grace-period") * 20);
 			}
-			if(config.getBoolean("deathmatch.enabled")){
-				tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), 
-						new DeathMatch(), config.getInt("deathmatch.time") * 20 * 60));
-			}
+            if (activePlayers.size() > config.getInt("endgame.players")){
+                endGameDM = config.getInt("endgame.players");
+            } else {
+                endGameDM = 2;
+            }
+            if(config.getBoolean("deathmatch.enabled")) {
+                SurvivalGames.$("Launching deathmatch timer...");
+                dmTaskID = Bukkit.getScheduler().scheduleSyncRepeatingTask(GameManager.getInstance().getPlugin(), new DeathMatchTimer(), 40L, 20L);
+                tasks.add(dmTaskID);
+            }
+            mode = GameMode.INGAME;
+            MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.gamestarted", "arena-"+gameID);
 		}
 
-		mode = GameMode.INGAME;
 		LobbyManager.getInstance().updateWall(gameID);
-		MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.gamestarted", "arena-"+gameID);
+
 
 	}
 	/*
@@ -460,32 +461,54 @@ public class Game {
 	int tid = 0;
 	public void countdown(int time) {
 		//Bukkit.broadcastMessage(""+time);
-		MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.gamestarting", "arena-"+gameID, "t-"+time);
+        MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.gamestarting", "arena-"+gameID, "t-"+time);
 		countdownRunning = true;
 		count = time;
 		Bukkit.getScheduler().cancelTask(tid);
 
-		if (mode == GameMode.WAITING || mode == GameMode.STARTING) {
-			mode  = GameMode.STARTING;
-			tid = Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) GameManager.getInstance().getPlugin(), new Runnable() {
-				public void run() {
-					if (count > 0) {
-						if (count % 10 == 0) {
-							msgFall(PrefixType.INFO, "game.countdown","t-"+count);
-						}
-						if (count < 6) {
-							msgFall(PrefixType.INFO, "game.countdown","t-"+count);
+		if (mode == GameMode.WAITING || mode == GameMode.STARTING || mode == GameMode.STARTING_DEATHMACH) {
+            if (mode != GameMode.STARTING_DEATHMACH){
+                mode  = GameMode.STARTING;
+                tid = Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) GameManager.getInstance().getPlugin(), new Runnable() {
+                    public void run() {
+                        if (count > 0) {
+                            if (count % 10 == 0) {
+                                msgFall(PrefixType.INFO, "game.countdown","t-"+count);
+                            }
+                            if (count < 6) {
+                                msgFall(PrefixType.INFO, "game.countdown","t-"+count);
+                            }
+                            count--;
+                            LobbyManager.getInstance().updateWall(gameID);
+                        } else {
+                            startGame();
+                            Bukkit.getScheduler().cancelTask(tid);
+                            countdownRunning = false;
+                        }
+                    }
+                }, 0, 20);
+            } else {
+                tid = Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) GameManager.getInstance().getPlugin(), new Runnable() {
+                    public void run() {
+                        if (count > 0) {
+                            if (count % 10 == 0) {
+                                msgFall(PrefixType.INFO, "game.deathmachcountdown","t-"+count);
+                            }
+                            if (count < 6) {
+                                msgFall(PrefixType.INFO, "game.deathmachcountdown","t-"+count);
 
-						}
-						count--;
-						LobbyManager.getInstance().updateWall(gameID);
-					} else {
-						startGame();
-						Bukkit.getScheduler().cancelTask(tid);
-						countdownRunning = false;
-					}
-				}
-			}, 0, 20);
+                            }
+                            count--;
+                            LobbyManager.getInstance().updateWall(gameID);
+                        } else {
+                            startGame();
+                            Bukkit.getScheduler().cancelTask(tid);
+                            countdownRunning = false;
+                        }
+                    }
+                }, 0, 20);
+            }
+
 
 		}
 	}
@@ -501,134 +524,137 @@ public class Game {
 	 * 
 	 */
 
-	public void removePlayer(Player p, boolean b) {
-		p.teleport(SettingsManager.getInstance().getLobbySpawn());
-		///$("Teleporting to lobby");
-		if (mode == GameMode.INGAME) {
-			killPlayer(p, b);
-		} else {
-			sm.removePlayer(p, gameID);
-			//	if (!b) p.teleport(SettingsManager.getInstance().getLobbySpawn());
-			restoreInv(p);
-			activePlayers.remove(p);
-			inactivePlayers.remove(p);
-			for (Object in : spawns.keySet().toArray()) {
-				if (spawns.get(in) == p) spawns.remove(in);
-			}
-			LobbyManager.getInstance().clearSigns(gameID);
-		}
+    public void playerLeave(final Player p, boolean teleport) {
+        msgFall(PrefixType.INFO, "game.playerleavegame", "player-" + p.getName());
+        if (teleport) {
+            p.teleport(SettingsManager.getInstance().getLobbySpawn());
+        }
+        sm.removePlayer(p, gameID);
+        scoreBoard.removePlayer(p);
+        activePlayers.remove(p);
+        inactivePlayers.remove(p);
+        voted.remove(p);
+        for (Object in : spawns.keySet().toArray()) {
+            if (spawns.get(in) == p) spawns.remove(in);
+        }
 
-		HookManager.getInstance().runHook("PLAYER_REMOVED", "player-"+p.getName());
+        HookManager.getInstance().runHook("PLAYER_REMOVED", "player-"+p.getName());
+        LobbyManager.getInstance().updateWall(gameID);
 
-		PlayerLeaveArenaEvent pl = new PlayerLeaveArenaEvent(p, this, b);
+        if (activePlayers.size() < 2 && mode != GameMode.WAITING) {
+            tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new Runnable() {
+                public void run(){
+                    playerWin(p);
+                    endGame();
+                }
+            }, 1L));
+        }
+    }
 
-		LobbyManager.getInstance().updateWall(gameID);
-	}
+    /*
+     *
+     * ################################################
+     *
+     * 			   HANDLE PLAYER DEATH
+     *
+     *  PLAYERS DIE A REAL DEATH WHICH IS HANDLED HERE
+     *
+     * ################################################
+     *
+     *
+     */
+    public void playerDeath(PlayerDeathEvent e) {
+        final Player p = e.getEntity();
+        if (!activePlayers.contains(p)) return;
 
-	public void playerLeave(Player p) {
+        sm.playerDied(p, activePlayers.size(), gameID, new Date().getTime() - startTime);
+        scoreBoard.playerDead(p);
+        activePlayers.remove(p);
+        inactivePlayers.add(p);
+        for (Object in : spawns.keySet().toArray()) {
+            if (spawns.get(in) == p) spawns.remove(in);
+        }
 
-	}
+        PlayerKilledEvent pk = null;
+        if (mode != GameMode.WAITING && p.getLastDamageCause() != null && p.getLastDamageCause().getCause() != null) {
+            EntityDamageEvent.DamageCause cause = p.getLastDamageCause().getCause();
+            switch (cause) {
+                case ENTITY_ATTACK:
+                    if(p.getLastDamageCause().getEntityType() == EntityType.PLAYER){
+                        EntityType enttype = p.getLastDamageCause().getEntityType();
+                        Player killer = p.getKiller();
+                        String killername = "Unknown";
 
-	/*
-	 * 
-	 * ################################################
-	 * 
-	 * 				KILL PLAYER
-	 * 
-	 * ################################################
-	 * 
-	 * 
-	 */
-	public void killPlayer(Player p, boolean left) {
-		try{
-			clearInv(p);
-			if (!left) {
-				p.teleport(SettingsManager.getInstance().getLobbySpawn());
-			}
-			sm.playerDied(p, activePlayers.size(), gameID, new Date().getTime() - startTime);
+                        if (killer != null) {
+                            killername = killer.getName();
+                        }
 
-			if (!activePlayers.contains(p)) return;
-			else restoreInv(p);
+                        String itemname = "Unknown Item";
+                        if (killer != null) {
+                            itemname = ItemReader.getFriendlyItemName(killer.getItemInHand().getType());
+                        }
 
-			activePlayers.remove(p);
-			inactivePlayers.add(p);
-			PlayerKilledEvent pk = null;
-			if (left) {
-				msgFall(PrefixType.INFO, "game.playerleavegame","player-"+p.getName() );
-			} else {
-				if (mode != GameMode.WAITING && p.getLastDamageCause() != null && p.getLastDamageCause().getCause() != null) {
-					switch (p.getLastDamageCause().getCause()) {
-					case ENTITY_ATTACK:
-						if(p.getLastDamageCause().getEntityType() == EntityType.PLAYER){
-							Player killer = p.getKiller();
-							msgFall(PrefixType.INFO, "death."+p.getLastDamageCause().getEntityType(),
-									"player-"+(SurvivalGames.auth.contains(p.getName()) ? ChatColor.DARK_RED + "" + ChatColor.BOLD : "") + p.getName(),
-									"killer-"+((killer != null)?(SurvivalGames.auth.contains(killer.getName()) ? ChatColor.DARK_RED + "" + ChatColor.BOLD : "") 
-											+ killer.getName():"Unknown"),
-											"item-"+((killer!=null)?ItemReader.getFriendlyItemName(killer.getItemInHand().getType()) : "Unknown Item"));
-							if(killer != null && p != null)
-								sm.addKill(killer, p, gameID);
-							pk = new PlayerKilledEvent(p, this, killer, p.getLastDamageCause().getCause());
-						}
-						else{
-							msgFall(PrefixType.INFO, "death."+p.getLastDamageCause().getEntityType(), "player-"
-									+(SurvivalGames.auth.contains(p.getName()) ? ChatColor.DARK_RED + "" + ChatColor.BOLD : "") 
-									+ p.getName(), "killer-"+p.getLastDamageCause().getEntityType());
-							pk = new PlayerKilledEvent(p, this, null, p.getLastDamageCause().getCause());
+                        msgFall(PrefixType.INFO, "death."+enttype, "player-"+p.getName(), "killer-"+killername, "item-"+itemname);
 
-						}
-						break;
-					default:
-						msgFall(PrefixType.INFO, "death."+p.getLastDamageCause().getCause().name(), 
-								"player-"+(SurvivalGames.auth.contains(p.getName()) ? ChatColor.DARK_RED + "" + ChatColor.BOLD : "") + p.getName(), 
-								"killer-"+p.getLastDamageCause().getCause());
-						pk = new PlayerKilledEvent(p, this, null, p.getLastDamageCause().getCause());
+                        if (killer != null && p != null) {
+                            sm.addKill(killer, p, gameID);
+                            scoreBoard.incScore(killer);
+                        }
+                        pk = new PlayerKilledEvent(p, this, killer, cause);
+                    }
+                    else {
+                        msgFall(PrefixType.INFO, "death." + p.getLastDamageCause().getEntityType(),
+                                "player-" + p.getName(),
+                                "killer-" + p.getLastDamageCause().getEntityType());
+                        pk = new PlayerKilledEvent(p, this, null, cause);
+                    }
+                    break;
+                default:
+                    msgFall(PrefixType.INFO, "death." + cause.name(),
+                            "player-" + p.getName(),
+                            "killer-" + cause);
+                    pk = new PlayerKilledEvent(p, this, null, cause);
 
-						break;
-					}
-					Bukkit.getServer().getPluginManager().callEvent(pk);
+                    break;
+            }
+            Bukkit.getServer().getPluginManager().callEvent(pk);
 
-					if (getActivePlayers() > 1) {
-						for (Player pl: getAllPlayers()) {
-							msgmgr.sendMessage(PrefixType.INFO, ChatColor.DARK_AQUA + "There are " + ChatColor.YELLOW + "" 
-									+ getActivePlayers() + ChatColor.DARK_AQUA + " players remaining!", pl);
-						}
-					}
-				}
+            if (getActivePlayers() > 1) {
+                for (Player pl: getAllPlayers()) {
+                    msgmgr.sendMessage(PrefixType.INFO, ChatColor.DARK_AQUA + "There are " + ChatColor.YELLOW + ""
+                            + getActivePlayers() + ChatColor.DARK_AQUA + " players remaining!", pl);
+                }
+            }
+        }
 
-			}
+        for (Player pe: activePlayers) {
+            Location l = pe.getLocation();
+            l.setY(l.getWorld().getMaxHeight());
+            l.getWorld().strikeLightningEffect(l);
+        }
 
-			for (Player pe: activePlayers) {
-				Location l = pe.getLocation();
-				l.setY(l.getWorld().getMaxHeight());
-				l.getWorld().strikeLightningEffect(l);
-			}
+        if (getActivePlayers() == endGameDM){
+            deathMach();
+        }
+        /** EndgameManager is replaced by Deathmach*/
+       /* if (getActivePlayers() <= config.getInt("endgame.players") && config.getBoolean("endgame.fire-lighting.enabled") && !endgameRunning) {
+            tasks.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(GameManager.getInstance().getPlugin(),
+                new EndgameManager(),
+                0,
+                config.getInt("endgame.fire-lighting.interval") * 20));
+        }
+*/
+        if (activePlayers.size() < 2 && mode != GameMode.WAITING) {
+            tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new Runnable(){
+                public void run(){
+                    playerWin(p);
+                    endGame();
+                }
+            }, 5L));
+        }
+        LobbyManager.getInstance().updateWall(gameID);
+    }
 
-			if (getActivePlayers() <= config.getInt("endgame.players") && config.getBoolean("endgame.fire-lighting.enabled") && !endgameRunning) {
-
-				tasks.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(GameManager.getInstance().getPlugin(),
-						new EndgameManager(),
-						0,
-						config.getInt("endgame.fire-lighting.interval") * 20));
-			}
-
-			if (activePlayers.size() < 2 && mode != GameMode.WAITING) {
-				playerWin(p);
-				endGame();
-			}
-			LobbyManager.getInstance().updateWall(gameID);
-			
-		}catch (Exception e){
-			SurvivalGames.$("???????????????????????");
-			e.printStackTrace();
-			SurvivalGames.$("ID"+gameID);
-			SurvivalGames.$(left+"");
-			SurvivalGames.$(activePlayers.size()+"");
-			SurvivalGames.$(activePlayers.toString());
-			SurvivalGames.$(p.getName());
-			SurvivalGames.$(p.getLastDamageCause().getCause().name());
-		}
-	}
 
 	/*
 	 * 
@@ -645,6 +671,7 @@ public class Game {
 		Player win = activePlayers.get(0);
 		// clearInv(p);
 		win.teleport(SettingsManager.getInstance().getLobbySpawn());
+        scoreBoard.removePlayer(p);
 		restoreInv(win);
 		msgmgr.broadcastFMessage(PrefixType.INFO, "game.playerwin","arena-"+gameID, "victim-"+p.getName(), "player-"+win.getName());
 		LobbyManager.getInstance().display(new String[] {
@@ -692,13 +719,14 @@ public class Game {
 	public void disable() {
 		disabled = true;
 		spawns.clear();
+        scoreBoard.reset();
 
 		for (int a = 0; a < activePlayers.size(); a = 0) {
 			try {
 
 				Player p = activePlayers.get(a);
 				msgmgr.sendMessage(PrefixType.WARNING, "Game disabled!", p);
-				removePlayer(p, false);
+                playerLeave(p, true);
 			} catch (Exception e) {}
 
 		}
@@ -748,6 +776,7 @@ public class Game {
 		QueueManager.getInstance().rollback(gameID, false);
 		LobbyManager.getInstance().updateWall(gameID);
 
+        scoreBoard.reset();
 	}
 
 	public void resetCallback() {
@@ -788,11 +817,6 @@ public class Game {
 
 
 	public void addSpectator(Player p) {
-		if (mode != GameMode.INGAME) {
-			msgmgr.sendMessage(PrefixType.WARNING, "You can only spectate running games!", p);
-			return;
-		}
-
 		saveInv(p);
 		clearInv(p);
 		p.teleport(SettingsManager.getInstance().getSpawnPoint(gameID, 1).add(0, 10, 0));
@@ -907,26 +931,59 @@ public class Game {
 		}
 	}
 
+    class LightningStrike implements Runnable {
+        public void run() {
+            if (nextStrike>200){
+                nextStrike -=200;
+            }
+            for(Player p: activePlayers) {
+                SurvivalGames.$("Zaibas " + p.getName());
+                p.getLocation().getWorld().strikeLightningEffect(p.getLocation());
+                p.damage(3);
+            }
+            tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new LightningStrike(), nextStrike));
+        }
+    }
 
-	class DeathMatch implements Runnable{
-		public void run(){
-			for(Player p: activePlayers){
-				for(int a = 0; a < spawns.size(); a++){
-					if(spawns.get(a) == p){
-						p.teleport(SettingsManager.getInstance().getSpawnPoint(gameID, a));
-						break;
-					}
-				}
-			}
-			tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new Runnable(){
-				public void run(){
-					for(Player p: activePlayers){
-						p.getLocation().getWorld().strikeLightning(p.getLocation());
-					}
-				}
-			}, config.getInt("deathmatch.killtime") * 20 * 60));
-		}
-	}
+    class DeathMatchTimer implements Runnable {
+        public void run() {
+            int now = (int) (new Date().getTime() / 1000);
+            long length = config.getInt("deathmatch.time") * 60;//
+            long remaining = (length - (now - (startTime / 1000)));
+            //SurvivalGames.$("Remaining: " + remaining + " (" + now + " / " + length + " / " + (startTime / 1000) + ")");
+
+            // Every 3 minutes or every minute in the last 3 minutes
+            if (((remaining % 180) == 0) || (((remaining % 60) == 0) && (remaining <= 180))) {
+                if (remaining > 0) {
+                    msgFall(PrefixType.INFO, "game.deathmatchwarning", "t-" + (remaining / 60));
+                }
+            }
+
+            // Death match time!!
+            if (remaining >= 1) return;
+            deathMach();
+        }
+    }
+
+    void deathMach(){
+        Bukkit.getScheduler().cancelTask(dmTaskID);
+        if (!tasks.remove((Integer) dmTaskID)) {
+            SurvivalGames.$("WARNING: DeathMatch task NOT removed!");
+        }
+        if (mode == GameMode.INGAME) {
+            mode = GameMode.STARTING_DEATHMACH;
+            countdown(10);
+        }
+        for(Player p: activePlayers){
+            for(int a = 0; a < spawns.size(); a++){
+                if(spawns.get(a) == p){
+                    p.teleport(SettingsManager.getInstance().getSpawnPoint(gameID, a));
+                    p.sendMessage(ChatColor.RED + "DeathMach!! Get READY!!");
+                    break;
+                }
+            }
+        }
+    }
 
 	public boolean isBlockInArena(Location v) {
 		return arena.containsBlock(v);
@@ -964,6 +1021,10 @@ public class Game {
 		all.addAll(inactivePlayers);
 		return all;
 	}
+
+    public GameScoreboard getScoreboard() {
+        return scoreBoard;
+    }
 
 	public boolean isSpectator(Player p) {
 		return spectators.contains(p.getName());
@@ -1011,36 +1072,4 @@ public class Game {
 			msgmgr.sendFMessage(type, msg, p, vars);
 		}
 	}
-
-	/*public void randomTrap() {
-	 * 
-        World world = SettingsManager.getGameWorld(gameID);
-
-        double xcord;
-        double zcord;
-        double ycord = 80;
-        Random rand = new Random();
-        xcord = rand.nextInt(1000);
-        zcord = rand.nextInt(1000);
-        Location trap = new Location(world, xcord, ycord, zcord);
-        boolean isAir = true;
-
-        while(isAir == true) {
-            ycord--;
-            Byte blockData = trap.getBlock().getData();
-            if(blockData != 0) {
-                trap.getBlock().setType(Material.AIR);
-                ycord--;
-                trap.getBlock().setType(Material.AIR);
-                ycord--;
-                trap.getBlock().setType(Material.AIR);
-                ycord--;
-                trap.getBlock().setType(Material.LAVA);
-                isAir = false;
-            } else {
-                isAir = true;
-            }
-        }
-
-    }*/
 }

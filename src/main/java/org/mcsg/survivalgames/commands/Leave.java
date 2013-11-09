@@ -1,6 +1,5 @@
 package org.mcsg.survivalgames.commands;
 
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.mcsg.survivalgames.GameManager;
 import org.mcsg.survivalgames.MessageManager;
@@ -15,7 +14,7 @@ public class Leave implements SubCommand {
             MessageManager.getInstance().sendFMessage(MessageManager.PrefixType.ERROR, "error.notinarena", player);
         }
         else{
-            GameManager.getInstance().removePlayer(player, false);
+            GameManager.getInstance().removePlayer(player, true);
         }
         return true;
     }

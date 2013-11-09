@@ -3,7 +3,6 @@ package org.mcsg.survivalgames.events;
 import java.util.HashSet;
 import java.util.Random;
 
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
@@ -18,7 +17,6 @@ import org.bukkit.inventory.ItemStack;
 import org.mcsg.survivalgames.Game;
 import org.mcsg.survivalgames.GameManager;
 import org.mcsg.survivalgames.Game.GameMode;
-import org.mcsg.survivalgames.SurvivalGames;
 import org.mcsg.survivalgames.util.ChestRatioStorage;
 
 
@@ -32,7 +30,11 @@ public class ChestReplaceEvent implements Listener{
     	if(e.getAction() == Action.RIGHT_CLICK_BLOCK){
     		BlockState clicked = e.getClickedBlock().getState();
     		if(clicked instanceof Chest || clicked instanceof DoubleChest){
-    			int gameid = GameManager.getInstance().getPlayerGameId(e.getPlayer());
+                int level = 1;
+                if (clicked.getBlock().getType().getId() == 146) {
+                    level += 4;
+                }
+                int gameid = GameManager.getInstance().getPlayerGameId(e.getPlayer());
     			if(gameid != -1){
     				Game game = GameManager.getInstance().getGame(gameid);
     				if(game.getMode() == GameMode.INGAME){
@@ -41,10 +43,11 @@ public class ChestReplaceEvent implements Listener{
     					if(!openedChest.contains(e.getClickedBlock())){
     						Inventory[] invs = ((clicked instanceof Chest))? new Inventory[] {((Chest) clicked).getBlockInventory()}
     						: new Inventory[] {((DoubleChest)clicked).getLeftSide().getInventory(), ((DoubleChest)clicked).getRightSide().getInventory()};
-    						ItemStack item = invs[0].getItem(0);
-    						int level = (item != null && item.getType() == Material.WOOL)? item.getData().getData() + 1 : 1;
-    						level = ChestRatioStorage.getInstance().getLevel(level);
-    						SurvivalGames.debug(invs +" "+level);
+
+                            if (rand.nextInt(5) == 0){
+                                level ++;
+                            }
+
     						for(Inventory inv : invs){
     							inv.setContents(new ItemStack[inv.getContents().length]);
     				            for(ItemStack i: ChestRatioStorage.getInstance().getItems(level)){
@@ -77,36 +80,36 @@ public class ChestReplaceEvent implements Listener{
     	 * OLD CRAP CODE
     	
         try{
-        	
+
             HashSet<Block>openedChest3 = new HashSet<Block>();
 
             if(!(e.getAction()==Action.RIGHT_CLICK_BLOCK)) return;
 
-            Block clickedBlock = e.getClickedBlock(); 
+            Block clickedBlock = e.getClickedBlock();
             int gameid = GameManager.getInstance().getPlayerGameId(e.getPlayer());
             if(gameid == -1) return;
             GameManager gm = GameManager.getInstance();
-            
+
             if(!gm.isPlayerActive(e.getPlayer())){
                 return;
             }
-        
+
             if(gm.getGame(gameid).getMode() != GameMode.INGAME){
             	e.setCancelled(true);
                 return;
             }
-            
+
             if(GameManager.openedChest.get(gameid) !=null){
                 openedChest3.addAll(GameManager.openedChest.get(gameid));
             }
-            
+
             if(openedChest3.contains(clickedBlock)){
                 return;
             }
-            
+
             Inventory inv;
             int size = 0;
-            
+
             if (clickedBlock.getState() instanceof Chest) {
                 size = 1;
                 inv  = ((Chest) clickedBlock.getState()).getInventory();

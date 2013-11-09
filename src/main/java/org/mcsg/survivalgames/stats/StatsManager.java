@@ -137,7 +137,7 @@ public class StatsManager {
             g.setRBStatus("Error: getno");
         }
 
-        addSQL("INSERT INTO "+SettingsManager.getSqlPrefix()+"gamestats VALUES(NULL,"+arenaid+","+players+",'"+winner.getName()+"',"+time+")");
+        addSQL("INSERT INTO "+SettingsManager.getSqlPrefix()+"gamestats VALUES(NULL,"+arenaid+","+players+",'"+winner.getName()+"',"+time+", null)");
 
         for(PlayerStatsSession s:arenas.get(arenaid).values()){
             s.setGameID(gameno);

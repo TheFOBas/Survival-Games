@@ -65,10 +65,10 @@ public class MoveEvent implements Listener{
             playerpos.remove(e.getPlayer());
             return;
         }
-        if(GameManager.getInstance().getGame(GameManager.getInstance().getPlayerGameId(e.getPlayer())).getMode() == Game.GameMode.INGAME)
+        if(GameManager.getInstance().getGame(GameManager.getInstance().getPlayerGameId(e.getPlayer())).getMode() == Game.GameMode.INGAME || GameManager.getInstance().getGame(GameManager.getInstance().getPlayerGameId(e.getPlayer())).getMode() == Game.GameMode.DEATHMACH)
             return;
         GameMode mo3 = GameManager.getInstance().getGameMode(GameManager.getInstance().getPlayerGameId(e.getPlayer()));
-        if(GameManager.getInstance().isPlayerActive(e.getPlayer()) && mo3 != Game.GameMode.INGAME){
+        if(GameManager.getInstance().isPlayerActive(e.getPlayer()) && mo3 != Game.GameMode.INGAME && mo3 != Game.GameMode.DEATHMACH){
             if(playerpos.get(e.getPlayer()) == null){
                 playerpos.put(e.getPlayer(), e.getPlayer().getLocation().toVector());
                 return;

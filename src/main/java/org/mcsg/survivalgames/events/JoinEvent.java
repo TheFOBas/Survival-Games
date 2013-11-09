@@ -8,8 +8,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.Plugin;
 import org.mcsg.survivalgames.GameManager;
 import org.mcsg.survivalgames.SettingsManager;
-import org.mcsg.survivalgames.util.UpdateChecker;
-
 
 
 public class JoinEvent implements Listener {
@@ -40,15 +38,7 @@ public class JoinEvent implements Listener {
                 }
             }, 5L);
         }
-        if((p.isOp() || p.hasPermission("sg.system.updatenotify")) && SettingsManager.getInstance().getConfig().getBoolean("check-for-update", true)){
-            Bukkit.getServer().getScheduler().scheduleAsyncDelayedTask(plugin, new Runnable() {
 
-                public void run() {
-                    System.out.println("[SG]Checking for updates");
-                    new UpdateChecker().check(p, plugin);
-                }
-             }, 60L);
-        }
     }
     
 }

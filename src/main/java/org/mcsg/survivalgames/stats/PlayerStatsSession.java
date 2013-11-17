@@ -32,11 +32,6 @@ public class PlayerStatsSession {
     private HashMap<Integer, Integer>kslist = new HashMap<Integer, Integer>();
 
 
-
-
-
-
-
     public PlayerStatsSession(Player p, int arenaid ){
         this.player = p;
         this.arenaid = arenaid;

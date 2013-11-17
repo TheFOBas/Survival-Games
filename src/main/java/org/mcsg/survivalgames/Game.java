@@ -3,6 +3,7 @@ package org.mcsg.survivalgames;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -63,6 +64,8 @@ public class Game {
 	private MessageManager msgmgr = MessageManager.getInstance();
     private GameScoreboard scoreBoard = null;
 
+    private Location center;
+
 	public Game(int gameid) {
 		gameID = gameid;
 		reloadConfig();
@@ -107,10 +110,46 @@ public class Game {
 
 		mode = GameMode.WAITING;
 
-
-        Bukkit.broadcastMessage("Game " + gameID);
+        //Bukkit.broadcastMessage("Game " + gameID);
         scoreBoard = new GameScoreboard(gameID);
 	}
+
+    private Location getCenter(){
+        double minX=0;
+        double minZ=0;
+        double maxX=0;
+        double maxZ=0;
+        double y=0;
+        {
+            Location l = SettingsManager.getInstance().getSpawnPoint(gameID, 1);
+            y = l.getY();
+            maxX = l.getX();
+            maxZ = l.getZ();
+            minX = l.getX();
+            minZ = l.getZ();
+        }
+
+        for(int i=2; i<=spawnCount; i++){
+            Location l = SettingsManager.getInstance().getSpawnPoint(gameID, i);
+            if(l.getX() > maxX){
+                maxX = l.getX();
+            }
+            if(l.getZ() > maxZ){
+                maxZ = l.getZ();
+            }
+            if(l.getX() < minX){
+                minX = l.getX();
+            }
+            if(l.getZ() < minZ){
+                minZ = l.getZ();
+            }
+        }
+
+
+        SurvivalGames.$("Center location of arena "+gameID+" is, max x: " + maxX +" minX: "+ minX +" maxZ: "+ maxZ +" minZ: " + minZ);
+        SurvivalGames.$("Center location of arena "+gameID+" is, x: " + ((minX+maxX)/2) +" y: "+ y +" z: "+ ((minZ+maxZ)/2));
+        return new Location(SettingsManager.getGameWorld(gameID),(minX+maxX)/2 ,y, (minZ+maxZ)/2);
+    }
 
 	public void reloadFlags() {
 		flags = SettingsManager.getInstance().getGameFlags(gameID);
@@ -127,6 +166,7 @@ public class Game {
 			spawns.put(a, null);
 			spawnCount = a;
 		}
+        center = getCenter();
 	}
 
 	public void addSpawn() {
@@ -232,13 +272,33 @@ public class Game {
 					if (spawns.get(a) == null) {
 						placed = true;
 						spawns.put(a, p);
+                        SurvivalGames.$("Spawn: "+a);
 						p.setGameMode(org.bukkit.GameMode.SURVIVAL);
 
-						p.teleport(SettingsManager.getInstance().getLobbySpawn());
-						saveInv(p);clearInv(p);	
-						p.teleport(SettingsManager.getInstance().getSpawnPoint(gameID, a));
+						p.teleport(SettingsManager.getInstance().getLobbySpawn());           //why??
 
-						p.setHealth(p.getMaxHealth());p.setFoodLevel(20);clearInv(p);
+						saveInv(p);
+                        clearInv(p);
+
+                        Location l = SettingsManager.getInstance().getSpawnPoint(gameID, a);
+
+                        SurvivalGames.$("Center location of arena "+gameID+" is, x: " + center.getX() +" z: "+ center.getZ());
+
+                        double dX =  center.getX() - l.getX();
+                        double dZ =  center.getZ() - l.getZ();
+                        double yaw = Math.atan2(dZ, dX) * (180/Math.PI) - 90;
+
+                        SurvivalGames.$("Delta location of arena "+gameID+" is, x: " + dX +" z: "+ dZ);
+
+                        SurvivalGames.$("Yaw: " + yaw);
+
+                        l.setYaw((float) yaw);                                    //face players to center of the arena
+
+						p.teleport(l);
+
+                        p.setBedSpawnLocation(SettingsManager.getInstance().getLobbySpawn());
+
+						p.setHealth(p.getMaxHealth());p.setFoodLevel(20);clearInv(p);p.setLevel(0);p.setExp(0);
 
 						activePlayers.add(p);sm.addPlayer(p, gameID);
                         scoreBoard.addPlayer(p);
@@ -293,6 +353,7 @@ public class Game {
 	}
 
 
+
 	public void showMenu(Player p){
 		GameManager.getInstance().openKitMenu(p);
 		Inventory i = Bukkit.getServer().createInventory(p, 9, ChatColor.RED+""+ChatColor.BOLD+"Kit Selection");
@@ -339,36 +400,37 @@ public class Game {
 	ArrayList < Player > voted = new ArrayList < Player > ();
 
 	public void vote(Player pl) {
-		if (GameMode.STARTING == mode) {
-			msgmgr.sendMessage(PrefixType.WARNING, "Game already starting!", pl);
-			return;
-		}
-		if (GameMode.WAITING != mode) {
-			msgmgr.sendMessage(PrefixType.WARNING, "Game already started!", pl);
-			return;
-		}
-		if (voted.contains(pl)) {
-			msgmgr.sendMessage(PrefixType.WARNING, "You already voted!", pl);
-			return;
-		}
-		vote++;
-		voted.add(pl);
-		msgmgr.sendFMessage(PrefixType.INFO, "game.playervote", pl, "player-"+pl.getName());
-		HookManager.getInstance().runHook("PLAYER_VOTE", "player-"+pl.getName());
+        if (GameMode.STARTING == mode) {
+            msgmgr.sendMessage(PrefixType.WARNING, "Game already starting!", pl);
+            return;
+        }
+        if (GameMode.WAITING != mode) {
+            msgmgr.sendMessage(PrefixType.WARNING, "Game already started!", pl);
+            return;
+        }
+        if (voted.contains(pl)) {
+            msgmgr.sendMessage(PrefixType.WARNING, "You already voted!", pl);
+            return;
+        }
+        vote++;
+        voted.add(pl);
+        msgmgr.sendFMessage(PrefixType.INFO, "game.playervote", pl, "player-"+pl.getName());
+        HookManager.getInstance().runHook("PLAYER_VOTE", "player-"+pl.getName());
         scoreBoard.playerLiving(pl);
 		/*for(Player p: activePlayers){
             p.sendMessage(ChatColor.AQUA+pl.getName()+" Voted to start the game! "+ Math.round((vote +0.0) / ((getActivePlayers() +0.0)*100)) +"/"+((c.getInt("auto-start-vote")+0.0))+"%");
         }*/
-		// Bukkit.getServer().broadcastPrefixType((vote +0.0) / (getActivePlayers() +0.0) +"% voted, needs "+(c.getInt("auto-start-vote")+0.0)/100);
-		if ((((vote + 0.0) / (getActivePlayers() +0.0))>=(config.getInt("auto-start-vote")+0.0)/100) && getActivePlayers() > 1) {
-			countdown(config.getInt("auto-start-time"));
-			for (Player p: activePlayers) {
-				//p.sendMessage(ChatColor.LIGHT_PURPLE + "Game Starting in " + c.getInt("auto-start-time"));
-				msgmgr.sendMessage(PrefixType.INFO, "Game starting in " + config.getInt("auto-start-time") + "!", p);
+        // Bukkit.getServer().broadcastPrefixType((vote +0.0) / (getActivePlayers() +0.0) +"% voted, needs "+(c.getInt("auto-start-vote")+0.0)/100);
+        if ((((vote + 0.0) / (getActivePlayers() +0.0))>=(config.getInt("auto-start-vote")+0.0)/100) && getActivePlayers() > 1) {
+            countdown(config.getInt("auto-start-time"));
+            for (Player p: activePlayers) {
+                //p.sendMessage(ChatColor.LIGHT_PURPLE + "Game Starting in " + c.getInt("auto-start-time"));
+                msgmgr.sendMessage(PrefixType.INFO, "Game starting in " + config.getInt("auto-start-time") + "!", p);
                 scoreBoard.playerLiving(pl);
             }
-		}
-	}
+        }
+        //StatsManager.getInstance().updateScoreboard(gameID);
+    }
 
 	/*
 	 * 
@@ -381,6 +443,7 @@ public class Game {
 	 * 
 	 */
     private int nextStrike = 1200;     //tik'ai
+
 	public void startGame() {
 		if (mode == GameMode.INGAME) {
 			return;
@@ -438,10 +501,7 @@ public class Game {
             mode = GameMode.INGAME;
             MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.gamestarted", "arena-"+gameID);
 		}
-
 		LobbyManager.getInstance().updateWall(gameID);
-
-
 	}
 	/*
 	 * 
@@ -529,18 +589,20 @@ public class Game {
         if (teleport) {
             p.teleport(SettingsManager.getInstance().getLobbySpawn());
         }
+
         sm.removePlayer(p, gameID);
         scoreBoard.removePlayer(p);
         activePlayers.remove(p);
         inactivePlayers.remove(p);
         voted.remove(p);
+        restoreInv(p);
         for (Object in : spawns.keySet().toArray()) {
             if (spawns.get(in) == p) spawns.remove(in);
         }
 
         HookManager.getInstance().runHook("PLAYER_REMOVED", "player-"+p.getName());
         LobbyManager.getInstance().updateWall(gameID);
-
+        SurvivalGames.$("DEBUG: Leave. arena: " + gameID + "  active players "+ activePlayers.size());
         if (activePlayers.size() < 2 && mode != GameMode.WAITING) {
             tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new Runnable() {
                 public void run(){
@@ -548,7 +610,13 @@ public class Game {
                     endGame();
                 }
             }, 1L));
+        } else if (getActivePlayers() <= endGameDM && (mode != GameMode.WAITING || mode != GameMode.DEATHMACH || mode != GameMode.STARTING_DEATHMACH)){
+            deathMach();
         }
+
+        LobbyManager.getInstance().updateWall(gameID);
+
+        //MoveEvent.removePlayer();
     }
 
     /*
@@ -564,60 +632,64 @@ public class Game {
      *
      */
     public void playerDeath(PlayerDeathEvent e) {
-        final Player p = e.getEntity();
-        if (!activePlayers.contains(p)) return;
 
-        sm.playerDied(p, activePlayers.size(), gameID, new Date().getTime() - startTime);
-        scoreBoard.playerDead(p);
-        activePlayers.remove(p);
-        inactivePlayers.add(p);
-        for (Object in : spawns.keySet().toArray()) {
-            if (spawns.get(in) == p) spawns.remove(in);
-        }
+            final Player p = e.getEntity();
+            if (!activePlayers.contains(p)) return;
 
-        PlayerKilledEvent pk = null;
-        if (mode != GameMode.WAITING && p.getLastDamageCause() != null && p.getLastDamageCause().getCause() != null) {
-            EntityDamageEvent.DamageCause cause = p.getLastDamageCause().getCause();
-            switch (cause) {
-                case ENTITY_ATTACK:
-                    if(p.getLastDamageCause().getEntityType() == EntityType.PLAYER){
-                        EntityType enttype = p.getLastDamageCause().getEntityType();
-                        Player killer = p.getKiller();
-                        String killername = "Unknown";
+            sm.playerDied(p, activePlayers.size(), gameID, new Date().getTime() - startTime);
+            scoreBoard.playerDead(p);
+            activePlayers.remove(p);
+            inactivePlayers.add(p);
+            restoreInv(p);
 
-                        if (killer != null) {
-                            killername = killer.getName();
-                        }
-
-                        String itemname = "Unknown Item";
-                        if (killer != null) {
-                            itemname = ItemReader.getFriendlyItemName(killer.getItemInHand().getType());
-                        }
-
-                        msgFall(PrefixType.INFO, "death."+enttype, "player-"+p.getName(), "killer-"+killername, "item-"+itemname);
-
-                        if (killer != null && p != null) {
-                            sm.addKill(killer, p, gameID);
-                            scoreBoard.incScore(killer);
-                        }
-                        pk = new PlayerKilledEvent(p, this, killer, cause);
-                    }
-                    else {
-                        msgFall(PrefixType.INFO, "death." + p.getLastDamageCause().getEntityType(),
-                                "player-" + p.getName(),
-                                "killer-" + p.getLastDamageCause().getEntityType());
-                        pk = new PlayerKilledEvent(p, this, null, cause);
-                    }
-                    break;
-                default:
-                    msgFall(PrefixType.INFO, "death." + cause.name(),
-                            "player-" + p.getName(),
-                            "killer-" + cause);
-                    pk = new PlayerKilledEvent(p, this, null, cause);
-
-                    break;
+            for (Object in : spawns.keySet().toArray()) {
+                if (spawns.get(in) == p) spawns.remove(in);
             }
-            Bukkit.getServer().getPluginManager().callEvent(pk);
+
+            PlayerKilledEvent pk = null;
+            if ((mode == GameMode.INGAME || mode == GameMode.INGAME ) && p.getLastDamageCause() != null && p.getLastDamageCause().getCause() != null){
+                EntityDamageEvent.DamageCause cause = p.getLastDamageCause().getCause();
+                switch (cause) {
+                    case ENTITY_ATTACK:
+                        if(p.getLastDamageCause().getEntityType() == EntityType.PLAYER){
+                            EntityType enttype = p.getLastDamageCause().getEntityType();
+                            Player killer = p.getKiller();
+                            String killername = "Unknown";
+
+                            if (killer != null) {
+                                killername = killer.getName();
+                            }
+
+                            String itemname = "Unknown Item";
+                            if (killer != null) {
+                                itemname = ItemReader.getFriendlyItemName(killer.getItemInHand().getType());
+                            }
+
+                            msgFall(PrefixType.INFO, "death."+enttype, "player-"+p.getName(), "killer-"+killername, "item-"+itemname);
+
+                            if (killer != null && p != null) {
+                                sm.addKill(killer, p, gameID);
+                                scoreBoard.incScore(killer);
+                            }
+                            pk = new PlayerKilledEvent(p, this, killer, cause);
+                        }
+                        else {
+                            msgFall(PrefixType.INFO, "death." + p.getLastDamageCause().getEntityType(),
+                                    "player-" + p.getName(),
+                                    "killer-" + p.getLastDamageCause().getEntityType());
+                            pk = new PlayerKilledEvent(p, this, null, cause);
+                        }
+                        break;
+                    default:
+                        msgFall(PrefixType.INFO, "death." + cause.name(),
+                                "player-" + p.getName(),
+                                "killer-" + cause);
+                        pk = new PlayerKilledEvent(p, this, null, cause);
+
+                        break;
+                }
+                Bukkit.getServer().getPluginManager().callEvent(pk);
+            }
 
             if (getActivePlayers() > 1) {
                 for (Player pl: getAllPlayers()) {
@@ -625,34 +697,36 @@ public class Game {
                             + getActivePlayers() + ChatColor.DARK_AQUA + " players remaining!", pl);
                 }
             }
-        }
 
-        for (Player pe: activePlayers) {
-            Location l = pe.getLocation();
-            l.setY(l.getWorld().getMaxHeight());
-            l.getWorld().strikeLightningEffect(l);
-        }
+            for (Player pe: activePlayers) {
+                Location l = pe.getLocation();
+                l.setY(l.getWorld().getMaxHeight());
+                l.getWorld().strikeLightningEffect(l);
+            }
 
-        if (getActivePlayers() == endGameDM){
-            deathMach();
-        }
-        /** EndgameManager is replaced by Deathmach*/
-       /* if (getActivePlayers() <= config.getInt("endgame.players") && config.getBoolean("endgame.fire-lighting.enabled") && !endgameRunning) {
-            tasks.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(GameManager.getInstance().getPlugin(),
-                new EndgameManager(),
-                0,
-                config.getInt("endgame.fire-lighting.interval") * 20));
-        }
-*/
-        if (activePlayers.size() < 2 && mode != GameMode.WAITING) {
-            tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new Runnable(){
-                public void run(){
-                    playerWin(p);
-                    endGame();
-                }
-            }, 5L));
-        }
-        LobbyManager.getInstance().updateWall(gameID);
+
+            SurvivalGames.$("DEBUG: Death. arena: " + gameID + "  active players "+ activePlayers.size());
+            if (activePlayers.size() < 2 && mode != GameMode.WAITING) {
+                tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new Runnable(){
+                    public void run(){
+                        playerWin(p);
+                        endGame();
+                    }
+                }, 5L));
+            } else if (activePlayers.size() <= endGameDM && (mode != GameMode.DEATHMACH || mode != GameMode.STARTING_DEATHMACH)){
+                deathMach();
+            }
+            /** EndgameManager is replaced by Deathmach*/
+            /* if (getActivePlayers() <= config.getInt("endgame.players") && config.getBoolean("endgame.fire-lighting.enabled") && !endgameRunning) {
+                tasks.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(GameManager.getInstance().getPlugin(),
+                    new EndgameManager(),
+                    0,
+                    config.getInt("endgame.fire-lighting.interval") * 20));
+            }
+            */
+
+
+            LobbyManager.getInstance().updateWall(gameID);
     }
 
 
@@ -666,6 +740,7 @@ public class Game {
 	 * 
 	 * 
 	 */
+
 	public void playerWin(Player p) {
 		if (GameMode.DISABLED == mode) return;
 		Player win = activePlayers.get(0);
@@ -798,7 +873,7 @@ public class Game {
 	}
 
 	public void restoreInvOffline(String p) {
-		restoreInv(Bukkit.getPlayer(p));
+        restoreInv(Bukkit.getPlayer(p));
 	}
 
 
@@ -812,9 +887,6 @@ public class Game {
 	 * 
 	 * 
 	 */
-
-
-
 
 	public void addSpectator(Player p) {
 		saveInv(p);
@@ -882,12 +954,14 @@ public class Game {
 			p.getInventory().setArmorContents(inv_store.get(p)[1]);
 			inv_store.remove(p);
 			p.updateInventory();
-		} catch (Exception e) { /*p.sendMessage(ChatColor.RED+"Inentory failed to restore or nothing was in it.");*/
+		} catch (Exception e) {
+            p.sendMessage(ChatColor.RED+"Inentory failed to restore or nothing was in it.");
 		}
 	}
 
 	@SuppressWarnings("deprecation")
 	public void clearInv(Player p) {
+
 		ItemStack[] inv = p.getInventory().getContents();
 		for (int i = 0; i < inv.length; i++) {
 			inv[i] = null;
@@ -927,7 +1001,6 @@ public class Game {
 				l.add(0, 5, 0);
 				player.getWorld().strikeLightningEffect(l);
 			}
-
 		}
 	}
 
@@ -935,6 +1008,8 @@ public class Game {
         public void run() {
             if (nextStrike>200){
                 nextStrike -=200;
+            } else if (nextStrike > 20){
+                nextStrike -=20;
             }
             for(Player p: activePlayers) {
                 SurvivalGames.$("Zaibas " + p.getName());
@@ -947,6 +1022,9 @@ public class Game {
 
     class DeathMatchTimer implements Runnable {
         public void run() {
+            if (activePlayers.size() < 1){
+                endGame();
+            }
             int now = (int) (new Date().getTime() / 1000);
             long length = config.getInt("deathmatch.time") * 60;//
             long remaining = (length - (now - (startTime / 1000)));
@@ -990,12 +1068,16 @@ public class Game {
 	}
 
 	public boolean isProtectionOn() {
+        //SurvivalGames.$("DAMAGE: "+(mode != GameMode.DEATHMACH) + " " +  (mode != GameMode.INGAME));
 		long t = startTime / 1000;
 		long l = config.getLong("grace-period");
 		long d = new Date().getTime() / 1000;
-		if ((d - t) < l) return true;
-		return false;
+		if ((d - t) < l || !(mode != GameMode.DEATHMACH ^ mode != GameMode.INGAME)) {
+            return true;
+        }
+        return false;
 	}
+
 
 	public int getID() {
 		return gameID;
@@ -1011,7 +1093,7 @@ public class Game {
 
 	public Player[][] getPlayers() {
 		return new Player[][] {
-				activePlayers.toArray(new Player[0]), inactivePlayers.toArray(new Player[0])
+		    activePlayers.toArray(new Player[0]), inactivePlayers.toArray(new Player[0])
 		};
 	}
 
@@ -1059,6 +1141,15 @@ public class Game {
 		rbstatus = s;
 	}
 
+    public int getPlayerSpawn(Player p){
+        for(int a = 0; a < spawns.size(); a++){
+            if(spawns.get(a) == p){
+                return  a;
+            }
+        }
+        return 1;
+    }
+
 	public String getRBStatus() {
 		return rbstatus;
 	}
@@ -1066,10 +1157,37 @@ public class Game {
 	public String getName() {
 		return "Arena "+gameID;
 	}
-
+    public boolean isVoted(Player p){
+        return voted.contains(p);
+    }
 	public void msgFall(PrefixType type, String msg, String...vars){
 		for(Player p: getAllPlayers()){
 			msgmgr.sendFMessage(type, msg, p, vars);
 		}
 	}
+
+
+    public static ChatColor GetColorPrefix(GameMode gameMode) {
+
+        if (gameMode == GameMode.DISABLED)
+            return ChatColor.RED;
+        if (gameMode == GameMode.ERROR)
+            return ChatColor.DARK_RED;
+        if (gameMode == GameMode.FINISHING)
+            return ChatColor.DARK_PURPLE;
+        if (gameMode == GameMode.WAITING)
+            return ChatColor.GOLD;
+        if (gameMode == GameMode.INGAME)
+            return ChatColor.DARK_GREEN;
+        if (gameMode == GameMode.STARTING)
+            return ChatColor.GREEN;
+        if (gameMode == GameMode.RESETING)
+            return ChatColor.DARK_AQUA;
+        if (gameMode == GameMode.LOADING)
+            return ChatColor.BLUE;
+        if (gameMode == GameMode.INACTIVE)
+            return ChatColor.DARK_GRAY;
+
+        return ChatColor.WHITE;
+    }
 }

@@ -45,9 +45,9 @@ public class ForceStart implements SubCommand {
 			MessageManager.getInstance().sendFMessage(PrefixType.ERROR, "error.alreadyingame", player);
 			return true;
 		}
-        for (Player pl : g.getAllPlayers()) {
+        /*for (Player pl : g.getAllPlayers()) {
             g.getScoreboard().playerLiving(pl);
-        }
+        }*/
 		g.countdown(seconds);
 
 		msgmgr.sendFMessage(PrefixType.INFO, "game.started", player, "arena-" + game);

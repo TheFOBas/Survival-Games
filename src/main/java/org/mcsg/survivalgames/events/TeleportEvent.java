@@ -6,12 +6,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.mcsg.survivalgames.GameManager;
+import org.mcsg.survivalgames.SurvivalGames;
 
 
 public class TeleportEvent implements Listener{
 
     @EventHandler
     public void playerTeleport(PlayerTeleportEvent event){
+        SurvivalGames.$("teleport");
         Player p = event.getPlayer();
         int id = GameManager.getInstance().getPlayerGameId(p);
         if(id == -1) return;

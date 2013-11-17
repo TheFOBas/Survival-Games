@@ -325,6 +325,7 @@ public class SettingsManager {
 	}
 
 	public Location getSpawnPoint(int gameid, int spawnid) {
+        //SurvivalGames.$("Get Spawn of game: "+gameid+" spawn: "+ spawnid);
 		return new Location(getGameWorld(gameid),
 				spawns.getInt("spawns." + gameid + "." + spawnid + ".x"),
 				spawns.getInt("spawns." + gameid + "." + spawnid + ".y"),

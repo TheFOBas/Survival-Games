@@ -91,6 +91,7 @@ public class SurvivalGames extends JavaPlugin {
 
 			ChestRatioStorage.getInstance().setup();
 			HookManager.getInstance().setup();
+			pm.registerEvents(new RespawnEvent(), p);
 			pm.registerEvents(new PlaceEvent(), p);
 			pm.registerEvents(new BreakEvent(), p);
 			pm.registerEvents(new DeathEvent(), p);
@@ -105,6 +106,7 @@ public class SurvivalGames extends JavaPlugin {
 			pm.registerEvents(new SpectatorEvents(), p);
 			pm.registerEvents(new BandageUse(), p);
 			pm.registerEvents(new KitEvents(), p);
+			pm.registerEvents(new ArenaMenu(), p);
 			pm.registerEvents(new KeepLobbyLoadedEvent(), p);
 
 			for (Player p: Bukkit.getOnlinePlayers()) {

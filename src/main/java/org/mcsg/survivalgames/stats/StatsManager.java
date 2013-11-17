@@ -4,16 +4,14 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.mcsg.survivalgames.Game;
-import org.mcsg.survivalgames.GameManager;
-import org.mcsg.survivalgames.MessageManager;
-import org.mcsg.survivalgames.SettingsManager;
+import org.bukkit.scoreboard.*;
+import org.mcsg.survivalgames.*;
 import org.mcsg.survivalgames.MessageManager.PrefixType;
 import org.mcsg.survivalgames.util.DatabaseManager;
 
@@ -84,20 +82,21 @@ public class StatsManager {
         arenas.get(arenaid).put(p, new PlayerStatsSession(p, arenaid));
     }
 
-    public void removePlayer(Player p, int id){
-        arenas.get(id).remove(p);
+    public void removePlayer(Player p, int arenaid){
+        arenas.get(arenaid).remove(p);
     }
 
     public void playerDied(Player p, int pos, int arenaid,long time){
         /*    System.out.println("player null "+(p == null));
         System.out.println("arena null "+(arenas == null));
         System.out.println("arenagetplayer null "+(arenas.get(arenaid).get(p) == null));*/
-
+        p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
         arenas.get(arenaid).get(p).died(pos, time);
     }
 
     public void playerWin(Player p, int arenaid, long time){
         arenas.get(arenaid).get(p).win(time);
+        p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
     }
 
 
@@ -145,13 +144,10 @@ public class StatsManager {
         }
         arenas.get(arenaid).clear();
 
-
+        for (Map.Entry<Player, PlayerStatsSession> p : arenas.get(arenaid).entrySet()) {
+            p.getKey().getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
+        }
     }
-
-
-
-
-
 
 
 
@@ -166,7 +162,6 @@ public class StatsManager {
             dumper.start();
         }
     }
-
 
     class DatabaseDumper extends Thread{
 

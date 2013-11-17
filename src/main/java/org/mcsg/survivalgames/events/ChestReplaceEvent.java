@@ -17,6 +17,7 @@ import org.bukkit.inventory.ItemStack;
 import org.mcsg.survivalgames.Game;
 import org.mcsg.survivalgames.GameManager;
 import org.mcsg.survivalgames.Game.GameMode;
+import org.mcsg.survivalgames.SurvivalGames;
 import org.mcsg.survivalgames.util.ChestRatioStorage;
 
 
@@ -27,118 +28,54 @@ public class ChestReplaceEvent implements Listener{
 	
     @EventHandler(priority = EventPriority.HIGHEST)
     public void ChestListener(PlayerInteractEvent e){
-    	if(e.getAction() == Action.RIGHT_CLICK_BLOCK){
-    		BlockState clicked = e.getClickedBlock().getState();
-    		if(clicked instanceof Chest || clicked instanceof DoubleChest){
-                int level = 1;
-                if (clicked.getBlock().getType().getId() == 146) {
-                    level += 4;
-                }
-                int gameid = GameManager.getInstance().getPlayerGameId(e.getPlayer());
-    			if(gameid != -1){
-    				Game game = GameManager.getInstance().getGame(gameid);
-    				if(game.getMode() == GameMode.INGAME){
-    					HashSet<Block>openedChest = GameManager.openedChest.get(gameid);
-    					openedChest = (openedChest == null)? new HashSet<Block>() : openedChest;
-    					if(!openedChest.contains(e.getClickedBlock())){
-    						Inventory[] invs = ((clicked instanceof Chest))? new Inventory[] {((Chest) clicked).getBlockInventory()}
-    						: new Inventory[] {((DoubleChest)clicked).getLeftSide().getInventory(), ((DoubleChest)clicked).getRightSide().getInventory()};
+        //SurvivalGames.$("chest");
 
-                            if (rand.nextInt(5) == 0){
-                                level ++;
-                            }
-
-    						for(Inventory inv : invs){
-    							inv.setContents(new ItemStack[inv.getContents().length]);
-    				            for(ItemStack i: ChestRatioStorage.getInstance().getItems(level)){
-    				                int l = rand.nextInt(26);
-    				                while(inv.getItem(l) != null)
-    				                    l = rand.nextInt(26);
-    				                inv.setItem(l, i);
-    				            }
-    						}
-    					}
-    					openedChest.add(e.getClickedBlock());
-    					GameManager.openedChest.put(gameid, openedChest);
-    				} else {
-    					e.setCancelled(true);
-    					return;
-    				}
-    			}
-    		}
-    	}
-    }
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	/*
-    	 * 
-    	 * OLD CRAP CODE
-    	
-        try{
-
-            HashSet<Block>openedChest3 = new HashSet<Block>();
-
-            if(!(e.getAction()==Action.RIGHT_CLICK_BLOCK)) return;
-
-            Block clickedBlock = e.getClickedBlock();
-            int gameid = GameManager.getInstance().getPlayerGameId(e.getPlayer());
-            if(gameid == -1) return;
-            GameManager gm = GameManager.getInstance();
-
-            if(!gm.isPlayerActive(e.getPlayer())){
-                return;
-            }
-
-            if(gm.getGame(gameid).getMode() != GameMode.INGAME){
-            	e.setCancelled(true);
-                return;
-            }
-
-            if(GameManager.openedChest.get(gameid) !=null){
-                openedChest3.addAll(GameManager.openedChest.get(gameid));
-            }
-
-            if(openedChest3.contains(clickedBlock)){
-                return;
-            }
-
-            Inventory inv;
-            int size = 0;
-
-            if (clickedBlock.getState() instanceof Chest) {
-                size = 1;
-                inv  = ((Chest) clickedBlock.getState()).getInventory();
-
-            }
-            else if(clickedBlock.getState() instanceof DoubleChest){
-                size = 2;
-                inv = ((DoubleChest) clickedBlock.getState()).getInventory();
-
-            }
-            else return;
-
-            inv.clear();
-            Random r = new Random();
-
-            for(ItemStack i: ChestRatioStorageOLD.getInstance().getItems()){
-                int l = r.nextInt(26 * size);
-
-                while(inv.getItem(l) != null)
-                    l = r.nextInt(26 * size);
-                inv.setItem(l, i);
-
-
-            }
-            openedChest3.add(clickedBlock);
-            GameManager.openedChest.put(gameid, openedChest3);
+    	if(e.getAction() != Action.RIGHT_CLICK_BLOCK){
+            //SurvivalGames.$("return 1");
+            return;
         }
-        catch(Exception e5){}*/
+        BlockState clicked = e.getClickedBlock().getState();
+        if(!(clicked instanceof Chest ^ clicked instanceof DoubleChest)){
+            //SurvivalGames.$("return 2");
+            return;
+        }
+        int gameid = GameManager.getInstance().getPlayerGameId(e.getPlayer());
+        if(gameid == -1){
+            //SurvivalGames.$("return 3");
+            return;
+        }
+        Game game = GameManager.getInstance().getGame(gameid);
+        if(game.getMode() != GameMode.INGAME){
+            //SurvivalGames.$("return 4");
+            e.setCancelled(true);
+            return;
+        }
 
+        int level = 1;
+        if (clicked.getBlock().getType().getId() == 146) {
+            level += 4;
+        }
 
+        HashSet<Block>openedChest = GameManager.openedChest.get(gameid);
+        openedChest = (openedChest == null)? new HashSet<Block>() : openedChest;
+        if(!openedChest.contains(e.getClickedBlock())){
+            Inventory[] invs = ((clicked instanceof Chest))? new Inventory[] {((Chest) clicked).getBlockInventory()}
+                    : new Inventory[] {((DoubleChest)clicked).getLeftSide().getInventory(), ((DoubleChest)clicked).getRightSide().getInventory()};
+            if (rand.nextInt(5) == 0){
+                level ++;
+            }
 
+            for(Inventory inv : invs){
+                inv.setContents(new ItemStack[inv.getContents().length]);
+                for(ItemStack i: ChestRatioStorage.getInstance().getItems(level)){
+                    int l = rand.nextInt(26);
+                    while(inv.getItem(l) != null)
+                        l = rand.nextInt(26);
+                    inv.setItem(l, i);
+                }
+            }
+        }
+        openedChest.add(e.getClickedBlock());
+        GameManager.openedChest.put(gameid, openedChest);
+    }
 }

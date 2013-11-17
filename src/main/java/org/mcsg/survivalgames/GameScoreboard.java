@@ -111,7 +111,6 @@ public class GameScoreboard {
      * @param player	The player to add to the scoreboard
      */
     public void addPlayer(final Player player) {
-
         // Store the current scoreboard for the player
         Scoreboard original = player.getScoreboard();
         if (original != null) {
@@ -131,7 +130,9 @@ public class GameScoreboard {
         final Objective sidebarObjective = this.sidebarObjective;
         Bukkit.getScheduler().runTaskLater(GameManager.getInstance().getPlugin(), new Runnable() {
             public void run() {
-                sidebarObjective.getScore(player).setScore(0);
+                try {
+                    sidebarObjective.getScore(player).setScore(0);
+                } catch (Exception e){}
             }
         }, 1L);
 

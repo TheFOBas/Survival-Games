@@ -8,6 +8,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.mcsg.survivalgames.Game;
 import org.mcsg.survivalgames.GameManager;
+import org.mcsg.survivalgames.SurvivalGames;
 
 public class DeathEvent implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled=true)
@@ -29,12 +30,21 @@ public class DeathEvent implements Listener {
 
     @EventHandler(ignoreCancelled=true)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = (Player)event.getEntity();
-        int gameid = GameManager.getInstance().getPlayerGameId(player);
-        if (gameid == -1) return;
-        if (!GameManager.getInstance().isPlayerActive(player)) return;
 
-        //Game game = GameManager.getInstance().getGame(gameid);
-        GameManager.getInstance().getGame(gameid).playerDeath(event);
+        try {
+            Player player = (Player)event.getEntity();
+            int gameid = GameManager.getInstance().getPlayerGameId(player);
+            if (gameid == -1) return;
+            if (!GameManager.getInstance().isPlayerActive(player)) return;
+
+            //Game game = GameManager.getInstance().getGame(gameid);
+            GameManager.getInstance().getGame(gameid).playerDeath(event);
+        }catch (Exception e){
+            SurvivalGames.$(event.getDeathMessage() + " " + event.getEntity());
+            SurvivalGames.$("???????????????????????");
+            e.printStackTrace();
+            SurvivalGames.$("Klaida cia");
+        }
+
     }
 }

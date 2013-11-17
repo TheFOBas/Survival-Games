@@ -13,7 +13,7 @@ import org.bukkit.util.Vector;
 import org.mcsg.survivalgames.Game;
 import org.mcsg.survivalgames.GameManager;
 import org.mcsg.survivalgames.Game.GameMode;
-
+import org.mcsg.survivalgames.SettingsManager;
 
 
 public class MoveEvent implements Listener{
@@ -54,27 +54,20 @@ public class MoveEvent implements Listener{
         }*/
     }
 
-    HashMap<Player, Vector>playerpos = new HashMap<Player,Vector>();
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void frozenSpawnHandler(PlayerMoveEvent e) {
-        /*  Optimization for single game world. No longer works since support for multiple worlds was added
-         *if(e.getPlayer().getWorld()!=SettingsManager.getGameWorld())
-            return;*/
-        if(GameManager.getInstance().getPlayerGameId(e.getPlayer()) == -1){
-            playerpos.remove(e.getPlayer());
+        int gameId = GameManager.getInstance().getPlayerGameId(e.getPlayer());
+        if(gameId == -1 ){
             return;
         }
-        if(GameManager.getInstance().getGame(GameManager.getInstance().getPlayerGameId(e.getPlayer())).getMode() == Game.GameMode.INGAME || GameManager.getInstance().getGame(GameManager.getInstance().getPlayerGameId(e.getPlayer())).getMode() == Game.GameMode.DEATHMACH)
+        if(GameManager.getInstance().getGame(gameId).getMode() == Game.GameMode.INGAME || GameManager.getInstance().getGame(gameId).getMode() == Game.GameMode.DEATHMACH)
             return;
-        GameMode mo3 = GameManager.getInstance().getGameMode(GameManager.getInstance().getPlayerGameId(e.getPlayer()));
+        GameMode mo3 = GameManager.getInstance().getGameMode(gameId);
         if(GameManager.getInstance().isPlayerActive(e.getPlayer()) && mo3 != Game.GameMode.INGAME && mo3 != Game.GameMode.DEATHMACH){
-            if(playerpos.get(e.getPlayer()) == null){
-                playerpos.put(e.getPlayer(), e.getPlayer().getLocation().toVector());
-                return;
-            }
+            Location spawn = SettingsManager.getInstance().getSpawnPoint(gameId, GameManager.getInstance().getGame(gameId).getPlayerSpawn(e.getPlayer()));
             Location l = e.getPlayer().getLocation();
-            Vector v = playerpos.get(e.getPlayer());
+            Vector v = spawn.toVector();
             if(l.getBlockX() != v.getBlockX()  || l.getBlockZ() != v.getBlockZ()){
                 l.setX(v.getBlockX() + .5);
                 l.setZ(v.getBlockZ() + .5);

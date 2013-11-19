@@ -9,23 +9,22 @@ import org.mcsg.survivalgames.GameManager;
 
 public class KitEvents implements Listener  {
 
-@EventHandler
-public void itemClick( 	InventoryClickEvent e){
-        if(e.getWhoClicked() instanceof Player){
-        Player p = (Player)e.getWhoClicked();
-if(GameManager.getInstance().isInKitMenu(p)){
-        if(e.getRawSlot() == e.getSlot()){
-        GameManager.getInstance().selectKit(p, e.getRawSlot() % 9);
-}
-        e.setCancelled(true);
-}
-        }
-        }
+    @EventHandler
+    public void itemClick( 	InventoryClickEvent e){
+            if(e.getWhoClicked() instanceof Player){
+            Player p = (Player)e.getWhoClicked();
+    if(GameManager.getInstance().isInKitMenu(p)){
+            if(e.getRawSlot() == e.getSlot()){
+            GameManager.getInstance().selectKit(p, e.getRawSlot() % 9);
+    }
+            e.setCancelled(true);
+    }
+            }
+            }
 
-@EventHandler
-public void InvClose(InventoryCloseEvent e){
-        GameManager.getInstance().leaveKitMenu((Player)e.getPlayer());
+    @EventHandler
+    public void InvClose(InventoryCloseEvent e){
+            GameManager.getInstance().leaveKitMenu((Player)e.getPlayer());
+    }
+
 }
-
-
-        }

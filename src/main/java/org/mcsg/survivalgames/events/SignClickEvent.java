@@ -32,6 +32,8 @@ public class SignClickEvent implements Listener{
             try{
                 if(lines[2].equalsIgnoreCase("Auto Assign")){
                     GameManager.getInstance().autoAddPlayer(e.getPlayer());
+                } else if (lines[2].equalsIgnoreCase("Arena Menu")){
+                     GameManager.getInstance().showArenaMenu(e.getPlayer());
                 }
                 else{
                     String game = lines[2].replace("Arena ", "");

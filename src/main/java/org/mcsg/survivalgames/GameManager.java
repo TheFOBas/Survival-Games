@@ -4,26 +4,15 @@ import java.util.*;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.DoubleChest;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.*;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.metadata.MetadataValue;
-import org.bukkit.permissions.Permission;
-import org.bukkit.permissions.PermissionAttachment;
-import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.*;
-import org.bukkit.util.Vector;
 import org.mcsg.survivalgames.Game.GameMode;
 import org.mcsg.survivalgames.MessageManager.PrefixType;
-import org.mcsg.survivalgames.api.PlayerLeaveArenaEvent;
 import org.mcsg.survivalgames.stats.StatsManager;
+import org.mcsg.survivalgames.util.ArenaInventoryHolder;
 import org.mcsg.survivalgames.util.Kit;
 
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
@@ -56,592 +45,33 @@ public class GameManager {
 		for (Game g: getGames()) {
 			openedChest.put(g.getID(), new HashSet < Block > ());
 		}
-        arenasInventory = Bukkit.getServer().createInventory(new HumanEntity() {
-            @Override
-            public String getName() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public PlayerInventory getInventory() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Inventory getEnderChest() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean setWindowProperty(InventoryView.Property property, int i) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public InventoryView getOpenInventory() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public InventoryView openInventory(Inventory itemStacks) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public InventoryView openWorkbench(Location location, boolean b) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public InventoryView openEnchanting(Location location, boolean b) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void openInventory(InventoryView inventoryView) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void closeInventory() {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public ItemStack getItemInHand() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setItemInHand(ItemStack itemStack) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public ItemStack getItemOnCursor() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setItemOnCursor(ItemStack itemStack) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isSleeping() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getSleepTicks() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public org.bukkit.GameMode getGameMode() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setGameMode(org.bukkit.GameMode gameMode) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isBlocking() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getExpToLevel() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public double getEyeHeight() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public double getEyeHeight(boolean b) {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Location getEyeLocation() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public List<Block> getLineOfSight(HashSet<Byte> bytes, int i) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Block getTargetBlock(HashSet<Byte> bytes, int i) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public List<Block> getLastTwoTargetBlocks(HashSet<Byte> bytes, int i) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Egg throwEgg() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Snowball throwSnowball() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Arrow shootArrow() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public <T extends Projectile> T launchProjectile(Class<? extends T> aClass) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getRemainingAir() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setRemainingAir(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getMaximumAir() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setMaximumAir(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getMaximumNoDamageTicks() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setMaximumNoDamageTicks(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getLastDamage() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setLastDamage(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getNoDamageTicks() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setNoDamageTicks(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Player getKiller() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean addPotionEffect(PotionEffect potionEffect) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean addPotionEffect(PotionEffect potionEffect, boolean b) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean addPotionEffects(Collection<PotionEffect> potionEffects) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean hasPotionEffect(PotionEffectType potionEffectType) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void removePotionEffect(PotionEffectType potionEffectType) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Collection<PotionEffect> getActivePotionEffects() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean hasLineOfSight(Entity entity) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean getRemoveWhenFarAway() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setRemoveWhenFarAway(boolean b) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public EntityEquipment getEquipment() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setCanPickupItems(boolean b) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean getCanPickupItems() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setCustomName(String s) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public String getCustomName() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setCustomNameVisible(boolean b) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isCustomNameVisible() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void damage(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void damage(int i, Entity entity) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getHealth() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setHealth(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getMaxHealth() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setMaxHealth(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void resetMaxHealth() {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Location getLocation() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Location getLocation(Location location) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setVelocity(Vector vector) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Vector getVelocity() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isOnGround() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public World getWorld() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean teleport(Location location) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean teleport(Location location, PlayerTeleportEvent.TeleportCause teleportCause) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean teleport(Entity entity) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean teleport(Entity entity, PlayerTeleportEvent.TeleportCause teleportCause) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public List<Entity> getNearbyEntities(double v, double v2, double v3) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getEntityId() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getFireTicks() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getMaxFireTicks() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setFireTicks(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void remove() {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isDead() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isValid() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Server getServer() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Entity getPassenger() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean setPassenger(Entity entity) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean eject() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public float getFallDistance() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setFallDistance(float v) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setLastDamageCause(EntityDamageEvent entityDamageEvent) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public EntityDamageEvent getLastDamageCause() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public UUID getUniqueId() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public int getTicksLived() {
-                return 0;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setTicksLived(int i) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void playEffect(EntityEffect entityEffect) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public EntityType getType() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isInsideVehicle() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean leaveVehicle() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Entity getVehicle() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setMetadata(String s, MetadataValue metadataValue) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public List<MetadataValue> getMetadata(String s) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean hasMetadata(String s) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void removeMetadata(String s, Plugin plugin) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isPermissionSet(String s) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isPermissionSet(Permission permission) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean hasPermission(String s) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean hasPermission(Permission permission) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public PermissionAttachment addAttachment(Plugin plugin, String s, boolean b) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public PermissionAttachment addAttachment(Plugin plugin) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public PermissionAttachment addAttachment(Plugin plugin, String s, boolean b, int i) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public PermissionAttachment addAttachment(Plugin plugin, int i) {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void removeAttachment(PermissionAttachment permissionAttachment) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void recalculatePermissions() {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public Set<PermissionAttachmentInfo> getEffectivePermissions() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public boolean isOp() {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-
-            @Override
-            public void setOp(boolean b) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-        }, 27);
+        arenasInventory = Bukkit.getServer().createInventory(new ArenaInventoryHolder(), 27);
         Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) getPlugin(), new Runnable() {
             public void run() {
                 int b = 0;
                 for (Game game : games) {
-                    ItemStack item = new ItemStack(267, 1);
+                    ItemStack item;
+                    switch (game.getGameMode()){
+                        case INGAME:
+                            item = new ItemStack(Material.WOOD_SWORD);
+                            item.setDurability((short)(item.getData().getItemType().getMaxDurability()-item.getData().getItemType().getMaxDurability()*(game.getActivePlayers()/(game.getInactivePlayers()+game.getActivePlayers()))));
+                            break;
+                        case STARTING:
+                            item = new ItemStack(Material.DIAMOND_SWORD);
+                            break;
+                        case DEATHMACH:
+                            item = new ItemStack(Material.STONE_SWORD);
+                            break;
+                        case WAITING:
+                            item = new ItemStack(Material.IRON_SWORD);
+                            if (SettingsManager.getInstance().getSpawnCount(game.getID()) > 0){
+                                //SurvivalGames.$(""+((float)item.getData().getItemType().getMaxDurability()*((float)game.getActivePlayers()/(float)SettingsManager.getInstance().getSpawnCount(game.getID())))+" "+ game.getActivePlayers() + " "+ SettingsManager.getInstance().getSpawnCount(game.getID())+ " " +(game.getActivePlayers()/SettingsManager.getInstance().getSpawnCount(game.getID())));
+                                item.setDurability((short)(item.getData().getItemType().getMaxDurability()-(float)item.getData().getItemType().getMaxDurability()*((float)game.getActivePlayers()/(float)SettingsManager.getInstance().getSpawnCount(game.getID()))));
+                            }
+                            break;
+                        default:
+                            item = new ItemStack(Material.IRON_SWORD);
+                    }
                     ItemMeta itemMeta = item.getItemMeta();
                     itemMeta.setDisplayName("Arena "+game.getID());
                     ArrayList<String> lore = new ArrayList<String>();
@@ -652,9 +82,27 @@ public class GameManager {
                     }
                     itemMeta.setLore(lore);
                     item.setItemMeta(itemMeta);
+
                     arenasInventory.setItem((0) + b, item);
                     b++;
                 }
+                ItemStack ingameItem = new ItemStack(Material.WOOD_SWORD);
+                ItemMeta im = ingameItem.getItemMeta();
+                im.setDisplayName("Arena uzimta, zaidimas vyksta.");
+                ingameItem.setItemMeta(im);
+                ItemStack deathMachItem = new ItemStack(Material.STONE_SWORD);
+                im.setDisplayName("Arenoje vyksta deathmach.");
+                deathMachItem.setItemMeta(im);
+                ItemStack defaultItem = new ItemStack(Material.IRON_SWORD);
+                im.setDisplayName("Arena laisva galite jungtis.");
+                defaultItem.setItemMeta(im);
+                ItemStack startingItem = new ItemStack(Material.DIAMOND_SWORD);
+                im.setDisplayName("Arenoje žaidimas toujau prasides.");
+                startingItem.setItemMeta(im);
+                arenasInventory.setItem(23, ingameItem);
+                arenasInventory.setItem(24, deathMachItem);
+                arenasInventory.setItem(25, defaultItem);
+                arenasInventory.setItem(26, startingItem);
             }
         }, 0, 20);
 
@@ -976,8 +424,4 @@ public class GameManager {
         player.openInventory(arenasInventory);
         return true;
     }
-
-
-
-
 }

@@ -53,7 +53,6 @@ public class Game {
 	private boolean disabled = false;
 	private int endgameTaskID = 0;
 	private boolean endgameRunning = false;
-    private int dmTaskID = 0;
     private int endGameDM;
 	private String rbstatus = "";
     private double rbpercent = 0;
@@ -63,6 +62,7 @@ public class Game {
 	private HashMap < String, String > hookvars = new HashMap < String, String > ();
 	private MessageManager msgmgr = MessageManager.getInstance();
     private GameScoreboard scoreBoard = null;
+    private int forceDm;
 
     private Location center;
 
@@ -146,8 +146,8 @@ public class Game {
         }
 
 
-        SurvivalGames.$("Center location of arena "+gameID+" is, max x: " + maxX +" minX: "+ minX +" maxZ: "+ maxZ +" minZ: " + minZ);
-        SurvivalGames.$("Center location of arena "+gameID+" is, x: " + ((minX+maxX)/2) +" y: "+ y +" z: "+ ((minZ+maxZ)/2));
+        //SurvivalGames.$("Center location of arena "+gameID+" is, max x: " + maxX +" minX: "+ minX +" maxZ: "+ maxZ +" minZ: " + minZ);
+        //sSurvivalGames.$("Center location of arena "+gameID+" is, x: " + ((minX+maxX)/2) +" y: "+ y +" z: "+ ((minZ+maxZ)/2));
         return new Location(SettingsManager.getGameWorld(gameID),(minX+maxX)/2 ,y, (minZ+maxZ)/2);
     }
 
@@ -218,6 +218,8 @@ public class Game {
 		LobbyManager.getInstance().updateWall(gameID);
 
 		MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.gamewaiting", "arena-"+gameID);
+
+        forceDm = 0;
 
         scoreBoard.reset();
 	}
@@ -495,8 +497,8 @@ public class Game {
             }
             if(config.getBoolean("deathmatch.enabled")) {
                 SurvivalGames.$("Launching deathmatch timer...");
-                dmTaskID = Bukkit.getScheduler().scheduleSyncRepeatingTask(GameManager.getInstance().getPlugin(), new DeathMatchTimer(), 40L, 20L);
-                tasks.add(dmTaskID);
+                forceDm = 0;
+                Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new DeathMatchTimer(), 20L);
             }
             mode = GameMode.INGAME;
             MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.gamestarted", "arena-"+gameID);
@@ -611,7 +613,7 @@ public class Game {
                 }
             }, 1L));
         } else if (getActivePlayers() <= endGameDM && (mode != GameMode.WAITING || mode != GameMode.DEATHMACH || mode != GameMode.STARTING_DEATHMACH)){
-            deathMach();
+            forceDm = 15;
         }
 
         LobbyManager.getInstance().updateWall(gameID);
@@ -714,7 +716,7 @@ public class Game {
                     }
                 }, 5L));
             } else if (activePlayers.size() <= endGameDM && (mode != GameMode.DEATHMACH || mode != GameMode.STARTING_DEATHMACH)){
-                deathMach();
+                forceDm = 15;
             }
             /** EndgameManager is replaced by Deathmach*/
             /* if (getActivePlayers() <= config.getInt("endgame.players") && config.getBoolean("endgame.fire-lighting.enabled") && !endgameRunning) {
@@ -1012,9 +1014,11 @@ public class Game {
                 nextStrike -=20;
             }
             for(Player p: activePlayers) {
-                SurvivalGames.$("Zaibas " + p.getName());
-                p.getLocation().getWorld().strikeLightningEffect(p.getLocation());
-                p.damage(3);
+                //SurvivalGames.$("Zaibas " + p.getName());
+                if (p.getLocation().distance(center) > (nextStrike/10)){
+                    p.getLocation().getWorld().strikeLightningEffect(p.getLocation());
+                    p.damage(3);
+                }
             }
             tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new LightningStrike(), nextStrike));
         }
@@ -1024,30 +1028,41 @@ public class Game {
         public void run() {
             if (activePlayers.size() < 1){
                 endGame();
+                return;
             }
             int now = (int) (new Date().getTime() / 1000);
             long length = config.getInt("deathmatch.time") * 60;//
-            long remaining = (length - (now - (startTime / 1000)));
+            long remaining;
+
+            if (forceDm > 0){
+                remaining = forceDm;
+            } else {
+                remaining = (length - (now - (startTime / 1000)));
+            }
             //SurvivalGames.$("Remaining: " + remaining + " (" + now + " / " + length + " / " + (startTime / 1000) + ")");
 
-            // Every 3 minutes or every minute in the last 3 minutes
-            if (((remaining % 180) == 0) || (((remaining % 60) == 0) && (remaining <= 180))) {
+
+            if (remaining <= 15){
+                msgFall(PrefixType.INFO, "game.deathmatchwarning", "t-" + (remaining));
+                // Every 3 minutes or every minute in the last 3 minutes
+            } else if (((remaining % 180) == 0) || (((remaining % 60) == 0) && (remaining <= 180))) {
                 if (remaining > 0) {
                     msgFall(PrefixType.INFO, "game.deathmatchwarning", "t-" + (remaining / 60));
                 }
             }
 
-            // Death match time!!
-            if (remaining >= 1) return;
-            deathMach();
+
+            if (remaining >= 1){
+                //schedule next Check
+                Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new DeathMatchTimer(), 20L);
+            }else {
+                // Death match time!!
+                deathMach();
+            }
         }
     }
 
     void deathMach(){
-        Bukkit.getScheduler().cancelTask(dmTaskID);
-        if (!tasks.remove((Integer) dmTaskID)) {
-            SurvivalGames.$("WARNING: DeathMatch task NOT removed!");
-        }
         if (mode == GameMode.INGAME) {
             mode = GameMode.STARTING_DEATHMACH;
             countdown(10);

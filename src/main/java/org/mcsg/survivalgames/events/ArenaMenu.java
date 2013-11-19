@@ -1,8 +1,10 @@
 package org.mcsg.survivalgames.events;
 
+import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -23,7 +25,7 @@ import java.util.ArrayList;
  */
 public class ArenaMenu implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void itemClick(InventoryClickEvent e){
         if(e.getWhoClicked() instanceof Player){
             Player p = (Player)e.getWhoClicked();
@@ -37,8 +39,11 @@ public class ArenaMenu implements Listener {
                     GameManager.getInstance().leaveArenaMenu(p);
                     p.closeInventory();
                 } catch (Exception ex){
+                    e.setCancelled(true);
+                    e.setCursor(new ItemStack(Material.AIR));
                 }
                 e.setCancelled(true);
+                e.setCursor(new ItemStack(Material.AIR));
             }
         }
     }

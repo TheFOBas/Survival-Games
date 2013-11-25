@@ -128,6 +128,7 @@ public class LobbyWall {
         for (Sign s: signs) {
             s.update();
         }
+        GameManager.getInstance().updateArenaInventory();
     }
 
     public void clear() {

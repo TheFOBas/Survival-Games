@@ -46,67 +46,69 @@ public class GameManager {
 			openedChest.put(g.getID(), new HashSet < Block > ());
 		}
         arenasInventory = Bukkit.getServer().createInventory(new ArenaInventoryHolder(), 27);
-        Bukkit.getScheduler().scheduleSyncRepeatingTask((Plugin) getPlugin(), new Runnable() {
-            public void run() {
-                int b = 0;
-                for (Game game : games) {
-                    ItemStack item;
-                    switch (game.getGameMode()){
-                        case INGAME:
-                            item = new ItemStack(Material.WOOD_SWORD);
-                            item.setDurability((short)(item.getData().getItemType().getMaxDurability()-item.getData().getItemType().getMaxDurability()*(game.getActivePlayers()/(game.getInactivePlayers()+game.getActivePlayers()))));
-                            break;
-                        case STARTING:
-                            item = new ItemStack(Material.DIAMOND_SWORD);
-                            break;
-                        case DEATHMACH:
-                            item = new ItemStack(Material.STONE_SWORD);
-                            break;
-                        case WAITING:
-                            item = new ItemStack(Material.IRON_SWORD);
-                            if (SettingsManager.getInstance().getSpawnCount(game.getID()) > 0){
-                                //SurvivalGames.$(""+((float)item.getData().getItemType().getMaxDurability()*((float)game.getActivePlayers()/(float)SettingsManager.getInstance().getSpawnCount(game.getID())))+" "+ game.getActivePlayers() + " "+ SettingsManager.getInstance().getSpawnCount(game.getID())+ " " +(game.getActivePlayers()/SettingsManager.getInstance().getSpawnCount(game.getID())));
-                                item.setDurability((short)(item.getData().getItemType().getMaxDurability()-(float)item.getData().getItemType().getMaxDurability()*((float)game.getActivePlayers()/(float)SettingsManager.getInstance().getSpawnCount(game.getID()))));
-                            }
-                            break;
-                        default:
-                            item = new ItemStack(Material.IRON_SWORD);
-                    }
-                    ItemMeta itemMeta = item.getItemMeta();
-                    itemMeta.setDisplayName("Arena "+game.getID());
-                    ArrayList<String> lore = new ArrayList<String>();
-                    lore.add(Game.GetColorPrefix(game.getGameMode()) + "" + game.getGameMode() + " - Players (" + game.getActivePlayers() + "/" + SettingsManager.getInstance().getSpawnCount(game.getID()) + ")");
-                    String[] players = getStringList(game.getID()).split("\n");
-                    for(String p:players){
-                        lore.add(p);
-                    }
-                    itemMeta.setLore(lore);
-                    item.setItemMeta(itemMeta);
 
-                    arenasInventory.setItem((0) + b, item);
-                    b++;
-                }
-                ItemStack ingameItem = new ItemStack(Material.WOOD_SWORD);
-                ItemMeta im = ingameItem.getItemMeta();
-                im.setDisplayName("Arena uzimta, zaidimas vyksta.");
-                ingameItem.setItemMeta(im);
-                ItemStack deathMachItem = new ItemStack(Material.STONE_SWORD);
-                im.setDisplayName("Arenoje vyksta deathmach.");
-                deathMachItem.setItemMeta(im);
-                ItemStack defaultItem = new ItemStack(Material.IRON_SWORD);
-                im.setDisplayName("Arena laisva galite jungtis.");
-                defaultItem.setItemMeta(im);
-                ItemStack startingItem = new ItemStack(Material.DIAMOND_SWORD);
-                im.setDisplayName("Arenoje žaidimas toujau prasides.");
-                startingItem.setItemMeta(im);
-                arenasInventory.setItem(23, ingameItem);
-                arenasInventory.setItem(24, deathMachItem);
-                arenasInventory.setItem(25, defaultItem);
-                arenasInventory.setItem(26, startingItem);
-            }
-        }, 0, 20);
+        updateArenaInventory();
 
 	}
+
+    public void updateArenaInventory(){
+        int b = 0;
+        for (Game game : games) {
+            ItemStack item;
+            switch (game.getGameMode()){
+                case INGAME:
+                    item = new ItemStack(Material.WOOD_SWORD);
+                    item.setDurability((short)(item.getData().getItemType().getMaxDurability()-item.getData().getItemType().getMaxDurability()*(game.getActivePlayers()/(game.getInactivePlayers()+game.getActivePlayers()))));
+                    break;
+                case STARTING:
+                    item = new ItemStack(Material.DIAMOND_SWORD);
+                    break;
+                case DEATHMACH:
+                    item = new ItemStack(Material.STONE_SWORD);
+                    break;
+                case WAITING:
+                    item = new ItemStack(Material.IRON_SWORD);
+                    if (SettingsManager.getInstance().getSpawnCount(game.getID()) > 0){
+                        //SurvivalGames.$(""+((float)item.getData().getItemType().getMaxDurability()*((float)game.getActivePlayers()/(float)SettingsManager.getInstance().getSpawnCount(game.getID())))+" "+ game.getActivePlayers() + " "+ SettingsManager.getInstance().getSpawnCount(game.getID())+ " " +(game.getActivePlayers()/SettingsManager.getInstance().getSpawnCount(game.getID())));
+                        item.setDurability((short)(item.getData().getItemType().getMaxDurability()-(float)item.getData().getItemType().getMaxDurability()*((float)game.getActivePlayers()/(float)SettingsManager.getInstance().getSpawnCount(game.getID()))));
+                    }
+                    break;
+                default:
+                    item = new ItemStack(Material.IRON_SWORD);
+            }
+            ItemMeta itemMeta = item.getItemMeta();
+            itemMeta.setDisplayName("Arena "+game.getID());
+            ArrayList<String> lore = new ArrayList<String>();
+            lore.add(Game.GetColorPrefix(game.getGameMode()) + "" + game.getGameMode() + " - Players (" + game.getActivePlayers() + "/" + SettingsManager.getInstance().getSpawnCount(game.getID()) + ")");
+            String[] players = getStringList(game.getID()).split("\n");
+            for(String p:players){
+                lore.add(p);
+            }
+            itemMeta.setLore(lore);
+            item.setItemMeta(itemMeta);
+
+            arenasInventory.setItem((0) + b, item);
+            b++;
+        }
+        ItemStack ingameItem = new ItemStack(Material.WOOD_SWORD);
+        ItemMeta im = ingameItem.getItemMeta();
+        im.setDisplayName("Arena uzimta, zaidimas vyksta.");
+        ingameItem.setItemMeta(im);
+        ItemStack deathMachItem = new ItemStack(Material.STONE_SWORD);
+        im.setDisplayName("Arenoje vyksta deathmach.");
+        deathMachItem.setItemMeta(im);
+        ItemStack defaultItem = new ItemStack(Material.IRON_SWORD);
+        im.setDisplayName("Arena laisva galite jungtis.");
+        defaultItem.setItemMeta(im);
+        ItemStack startingItem = new ItemStack(Material.DIAMOND_SWORD);
+        im.setDisplayName("Arenoje žaidimas toujau prasides.");
+        startingItem.setItemMeta(im);
+        arenasInventory.setItem(23, ingameItem);
+        arenasInventory.setItem(24, deathMachItem);
+        arenasInventory.setItem(25, defaultItem);
+        arenasInventory.setItem(26, startingItem);
+
+    }
 
 	public Plugin getPlugin() {
 		return p;

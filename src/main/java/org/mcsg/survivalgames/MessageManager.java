@@ -65,7 +65,7 @@ public class MessageManager {
 	 * 
 	 * @param type
 	 * @param msg
-	 * @param p
+	 * @param player
 	 */
 	
 	public void sendMessage(PrefixType type, String msg, Player player){

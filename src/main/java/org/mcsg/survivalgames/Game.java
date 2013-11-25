@@ -219,7 +219,7 @@ public class Game {
 
 		MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.gamewaiting", "arena-"+gameID);
 
-        forceDm = 0;
+        forceDm = -1;
 
         scoreBoard.reset();
 	}
@@ -456,12 +456,12 @@ public class Game {
 				msgmgr.sendMessage(PrefixType.WARNING, "Not enough players!", pl);
 				mode = GameMode.WAITING;
 				LobbyManager.getInstance().updateWall(gameID);
-
 			}
 			return;
 		} else if (mode == GameMode.STARTING_DEATHMACH) {
             nextStrike = 1200; //tikks
             mode = GameMode.DEATHMACH;
+            deathMach();
             tasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new LightningStrike(), nextStrike));
             MessageManager.getInstance().broadcastFMessage(PrefixType.INFO, "broadcast.deathmachstarted", "arena-"+gameID);
         } else {
@@ -497,7 +497,7 @@ public class Game {
             }
             if(config.getBoolean("deathmatch.enabled")) {
                 SurvivalGames.$("Launching deathmatch timer...");
-                forceDm = 0;
+                forceDm = -1;
                 Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new DeathMatchTimer(), 20L);
             }
             mode = GameMode.INGAME;
@@ -928,17 +928,16 @@ public class Game {
 		p.setSaturation(20);
 		p.teleport(SettingsManager.getInstance().getLobbySpawn());
 		// Bukkit.getServer().broadcastPrefixType("Removing Spec "+p.getName()+" "+spectators.size()+" left");
-		spectators.remove(p.getName());
+		//spectators.remove(p.getName());
 		// Bukkit.getServer().broadcastPrefixType("Removed");
 
 		nextspec.remove(p);
 	}
 
 	public void clearSpecs() {
-
-		for (int a = 0; a < spectators.size(); a = 0) {
-			removeSpectator(Bukkit.getPlayerExact(spectators.get(0)));
-		}
+        for (String name : spectators) {
+            removeSpectator(Bukkit.getPlayerExact(name));
+        }
 		spectators.clear();
 		nextspec.clear();
 	}
@@ -1034,16 +1033,18 @@ public class Game {
             long length = config.getInt("deathmatch.time") * 60;//
             long remaining;
 
-            if (forceDm > 0){
+            if (forceDm > -1){
                 remaining = forceDm;
+                forceDm--;
             } else {
                 remaining = (length - (now - (startTime / 1000)));
             }
             //SurvivalGames.$("Remaining: " + remaining + " (" + now + " / " + length + " / " + (startTime / 1000) + ")");
 
-
-            if (remaining <= 15){
-                msgFall(PrefixType.INFO, "game.deathmatchwarning", "t-" + (remaining));
+            if (remaining <= 5 && remaining < 60){
+                msgFall(PrefixType.INFO, "game.deathmatchtpwarning", "t-" + (remaining));
+            } else if (remaining%5 == 0 && remaining < 15){
+                msgFall(PrefixType.INFO, "game.deathmatchtpwarning", "t-" + (remaining));
                 // Every 3 minutes or every minute in the last 3 minutes
             } else if (((remaining % 180) == 0) || (((remaining % 60) == 0) && (remaining <= 180))) {
                 if (remaining > 0) {
@@ -1055,27 +1056,27 @@ public class Game {
             if (remaining >= 1){
                 //schedule next Check
                 Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new DeathMatchTimer(), 20L);
-            }else {
+            } else {
                 // Death match time!!
-                deathMach();
+                if (mode == GameMode.INGAME) {
+                    mode = GameMode.STARTING_DEATHMACH;
+                    countdown(10);
+                    for(Player p: activePlayers){
+                        for(int a = 0; a < spawns.size(); a++){
+                            if(spawns.get(a) == p){
+                                p.teleport(SettingsManager.getInstance().getSpawnPoint(gameID, a));
+                                p.sendMessage(ChatColor.RED + "DeathMach!! Get READY!!");
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
     void deathMach(){
-        if (mode == GameMode.INGAME) {
-            mode = GameMode.STARTING_DEATHMACH;
-            countdown(10);
-        }
-        for(Player p: activePlayers){
-            for(int a = 0; a < spawns.size(); a++){
-                if(spawns.get(a) == p){
-                    p.teleport(SettingsManager.getInstance().getSpawnPoint(gameID, a));
-                    p.sendMessage(ChatColor.RED + "DeathMach!! Get READY!!");
-                    break;
-                }
-            }
-        }
+
     }
 
 	public boolean isBlockInArena(Location v) {

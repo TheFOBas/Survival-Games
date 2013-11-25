@@ -66,6 +66,7 @@ public class MoveEvent implements Listener{
         if(GameManager.getInstance().isPlayerActive(e.getPlayer()) && mo3 != Game.GameMode.INGAME && mo3 != Game.GameMode.DEATHMACH){
             Location to = e.getFrom();
             Location from = e.getTo();
+            to.setY(from.getY());
             to.setYaw(from.getYaw());
             to.setPitch(from.getPitch());
             e.setTo(to);

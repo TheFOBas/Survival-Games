@@ -327,9 +327,9 @@ public class SettingsManager {
 	public Location getSpawnPoint(int gameid, int spawnid) {
         //SurvivalGames.$("Get Spawn of game: "+gameid+" spawn: "+ spawnid);
 		return new Location(getGameWorld(gameid),
-				spawns.getInt("spawns." + gameid + "." + spawnid + ".x"),
-				spawns.getInt("spawns." + gameid + "." + spawnid + ".y"),
-				spawns.getInt("spawns." + gameid + "." + spawnid + ".z"));
+				spawns.getInt("spawns." + gameid + "." + spawnid + ".x")+0.5,
+				spawns.getInt("spawns." + gameid + "." + spawnid + ".y")+5,
+				spawns.getInt("spawns." + gameid + "." + spawnid + ".z")+0.5);
 	}
 	
 	public void setLobbySpawn(Location l) {

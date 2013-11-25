@@ -90,13 +90,11 @@ public class StatsManager {
         /*    System.out.println("player null "+(p == null));
         System.out.println("arena null "+(arenas == null));
         System.out.println("arenagetplayer null "+(arenas.get(arenaid).get(p) == null));*/
-        p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
         arenas.get(arenaid).get(p).died(pos, time);
     }
 
     public void playerWin(Player p, int arenaid, long time){
         arenas.get(arenaid).get(p).win(time);
-        p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
     }
 
 
@@ -144,9 +142,6 @@ public class StatsManager {
         }
         arenas.get(arenaid).clear();
 
-        for (Map.Entry<Player, PlayerStatsSession> p : arenas.get(arenaid).entrySet()) {
-            p.getKey().getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
-        }
     }
 
 

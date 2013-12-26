@@ -33,11 +33,15 @@ public class ArenaMenu implements Listener {
                 ItemStack item = e.getCurrentItem();
                 ItemMeta itemMeta = item.getItemMeta();
                 try {
-                    String game = itemMeta.getDisplayName().replace("Arena ", "");
-                    int gameno  = Integer.parseInt(game);
-                    GameManager.getInstance().addPlayer((Player) e.getWhoClicked(), gameno);
-                    GameManager.getInstance().leaveArenaMenu(p);
-                    p.closeInventory();
+                    if (item.getType() == Material.BEACON){
+                       GameManager.getInstance().autoAddPlayer((Player) e.getWhoClicked());
+                    } else {
+                        String game = itemMeta.getDisplayName().replace("Arena ", "");
+                        int gameno  = Integer.parseInt(game);
+                        GameManager.getInstance().addPlayer((Player) e.getWhoClicked(), gameno);
+                        GameManager.getInstance().leaveArenaMenu(p);
+                        p.closeInventory();
+                    }
                 } catch (Exception ex){
                     e.setCancelled(true);
                     e.setCursor(new ItemStack(Material.AIR));

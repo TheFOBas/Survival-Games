@@ -51,6 +51,8 @@ public class GameManager {
 
 	}
 
+
+
     public void updateArenaInventory(){
         int b = 0;
         for (Game game : games) {
@@ -80,10 +82,15 @@ public class GameManager {
             itemMeta.setDisplayName("Arena "+game.getID());
             ArrayList<String> lore = new ArrayList<String>();
             lore.add(Game.GetColorPrefix(game.getGameMode()) + "" + game.getGameMode() + " - Players (" + game.getActivePlayers() + "/" + SettingsManager.getInstance().getSpawnCount(game.getID()) + ")");
-            String[] players = getStringList(game.getID()).split("\n");
-            for(String p:players){
+
+
+            String []players = getMenuStringList(game.getID()).split("\n");
+
+            for (String p: players){
                 lore.add(p);
             }
+
+
             itemMeta.setLore(lore);
             item.setItemMeta(itemMeta);
 
@@ -94,15 +101,23 @@ public class GameManager {
         ItemMeta im = ingameItem.getItemMeta();
         im.setDisplayName("Arena uzimta, zaidimas vyksta.");
         ingameItem.setItemMeta(im);
+
+        ItemStack randomItem = new ItemStack(Material.BEACON);
+        im.setDisplayName("Atsitiktinė arena.");
+        randomItem.setItemMeta(im);
+
         ItemStack deathMachItem = new ItemStack(Material.STONE_SWORD);
         im.setDisplayName("Arenoje vyksta deathmach.");
         deathMachItem.setItemMeta(im);
+
         ItemStack defaultItem = new ItemStack(Material.IRON_SWORD);
         im.setDisplayName("Arena laisva galite jungtis.");
         defaultItem.setItemMeta(im);
+
         ItemStack startingItem = new ItemStack(Material.DIAMOND_SWORD);
         im.setDisplayName("Arenoje žaidimas toujau prasides.");
         startingItem.setItemMeta(im);
+        arenasInventory.setItem(18, randomItem);
         arenasInventory.setItem(23, ingameItem);
         arenasInventory.setItem(24, deathMachItem);
         arenasInventory.setItem(25, defaultItem);
@@ -414,6 +429,35 @@ public class GameManager {
 
 		return sb.toString();
 	}
+
+    public String getMenuStringList(int gid){
+        Game g = getGame(gid);
+        StringBuilder sb = new StringBuilder();
+        Player[][]players = g.getPlayers();
+
+        sb.append(ChatColor.GREEN+"Alive:"+ChatColor.GREEN+" ");
+        int i = 0;
+        for(Player p: players[0]){
+            if (i % 4 == 0){
+                sb.append("\n");
+            }
+            sb.append(p.getName()+", ");
+            i++;
+        }
+        sb.append("\n\n");
+        sb.append(ChatColor.RED+  "Dead:"+ChatColor.GREEN+" ");
+        i = 0;
+        for(Player p: players[1]){
+            if (i % 4 == 0){
+                sb.append("\n");
+            }
+            sb.append(p.getName()+", ");
+            i++;
+        }
+        sb.append("\n\n");
+
+        return sb.toString();
+    }
 
     public boolean showArenaMenu(Player player){
         openArenaMenu(player);

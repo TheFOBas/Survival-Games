@@ -274,7 +274,6 @@ public class Game {
 					if (spawns.get(a) == null) {
 						placed = true;
 						spawns.put(a, p);
-                        SurvivalGames.$("Spawn: "+a);
 						p.setGameMode(org.bukkit.GameMode.SURVIVAL);
 
 						p.teleport(SettingsManager.getInstance().getLobbySpawn());           //why??
@@ -284,15 +283,11 @@ public class Game {
 
                         Location l = SettingsManager.getInstance().getSpawnPoint(gameID, a);
 
-                        SurvivalGames.$("Center location of arena "+gameID+" is, x: " + center.getX() +" z: "+ center.getZ());
 
                         double dX =  center.getX() - l.getX();
                         double dZ =  center.getZ() - l.getZ();
                         double yaw = Math.atan2(dZ, dX) * (180/Math.PI) - 90;
 
-                        SurvivalGames.$("Delta location of arena "+gameID+" is, x: " + dX +" z: "+ dZ);
-
-                        SurvivalGames.$("Yaw: " + yaw);
 
                         l.setYaw((float) yaw);                                    //face players to center of the arena
 
@@ -570,8 +565,6 @@ public class Game {
                     }
                 }, 0, 20);
             }
-
-
 		}
 	}
 
@@ -1029,6 +1022,7 @@ public class Game {
                 endGame();
                 return;
             }
+
             int now = (int) (new Date().getTime() / 1000);
             long length = config.getInt("deathmatch.time") * 60;//
             long remaining;
@@ -1039,6 +1033,7 @@ public class Game {
             } else {
                 remaining = (length - (now - (startTime / 1000)));
             }
+
             //SurvivalGames.$("Remaining: " + remaining + " (" + now + " / " + length + " / " + (startTime / 1000) + ")");
 
             if (remaining <= 5 && remaining < 60){
@@ -1052,15 +1047,13 @@ public class Game {
                 }
             }
 
-
-            if (remaining >= 1){
+            if (remaining > 1){
                 //schedule next Check
                 Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new DeathMatchTimer(), 20L);
             } else {
                 // Death match time!!
                 if (mode == GameMode.INGAME) {
-                    mode = GameMode.STARTING_DEATHMACH;
-                    countdown(10);
+
                     for(Player p: activePlayers){
                         for(int a = 0; a < spawns.size(); a++){
                             if(spawns.get(a) == p){
@@ -1070,6 +1063,15 @@ public class Game {
                             }
                         }
                     }
+                    mode = GameMode.STARTING_DEATHMACH;
+                    //bandom game moda keisti po vieno tick. Gali buti kad žaidimo režimas pakeičiamas prieš teleportacija?
+                    /*Bukkit.getScheduler().scheduleSyncDelayedTask(GameManager.getInstance().getPlugin(), new Runnable() {
+                        @Override
+                        public void run() {
+                            mode = GameMode.STARTING_DEATHMACH;
+                        }
+                    }, 1L);*/
+                    countdown(10);
                 }
             }
         }
@@ -1078,6 +1080,8 @@ public class Game {
     void deathMach(){
 
     }
+
+
 
 	public boolean isBlockInArena(Location v) {
 		return arena.containsBlock(v);
@@ -1135,9 +1139,11 @@ public class Game {
 	public boolean isPlayerActive(Player player) {
 		return activePlayers.contains(player);
 	}
+
 	public boolean isPlayerinactive(Player player) {
 		return inactivePlayers.contains(player);
 	}
+
 	public boolean hasPlayer(Player p) {
 		return activePlayers.contains(p) || inactivePlayers.contains(p);
 	}

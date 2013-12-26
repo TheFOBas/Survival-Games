@@ -107,7 +107,8 @@ public class SurvivalGames extends JavaPlugin {
 			pm.registerEvents(new BandageUse(), p);
 			pm.registerEvents(new KitEvents(), p);
 			pm.registerEvents(new ArenaMenu(), p);
-			pm.registerEvents(new KeepLobbyLoadedEvent(), p);
+			pm.registerEvents(new CompassEvent(), p);
+            pm.registerEvents(new KeepLobbyLoadedEvent(), p);
 
 			for (Player p: Bukkit.getOnlinePlayers()) {
 				if (GameManager.getInstance().getBlockGameId(p.getLocation()) != -1) {
